@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Employee Dashboard')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container mt-4">
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Dashboard</h2>
+        <div>
+            <form th:if="${!isCheckedIn}" th:action="@{/employee/checkin}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-lg btn-success">CHECK IN</button>
+            </form>
+            <form th:if="${isCheckedIn && !isCheckedOut}" th:action="@{/employee/checkout}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-lg btn-danger">CHECK OUT</button>
+            </form>
+            <button th:if="${isCheckedOut}" class="btn btn-lg btn-secondary" disabled>DONE FOR TODAY</button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Current Month Summary</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Working Days
+                            <span class="badge bg-primary rounded-pill" th:text="${compliance.workingDays}"></span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Leaves
+                            <span class="badge bg-secondary rounded-pill" th:text="${compliance.leaves}"></span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Public Holidays
+                            <span class="badge bg-secondary rounded-pill" th:text="${compliance.publicHolidays}"></span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Exception Days
+                            <span class="badge bg-secondary rounded-pill" th:text="${compliance.exceptionDays}"></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Compliance Status</h5>
+                </div>
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <div class="mb-3">
+                        <h1 class="display-4 fw-bold" th:text="${compliance.compliancePercentage} + '%'"></h1>
+                        <p class="text-muted mb-0">Compliance</p>
+                    </div>
+                    
+                    <div class="progress mb-4">
+                        <div class="progress-bar" role="progressbar" 
+                             th:style="'width: ' + ${compliance.compliancePercentage} + '%'" 
+                             th:classappend="${compliance.compliancePercentage >= 100} ? 'bg-success' : (${compliance.compliancePercentage >= 50} ? 'bg-warning' : 'bg-danger')"
+                             th:attr="aria-valuenow=${compliance.compliancePercentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 th:text="${compliance.requiredOfficeDays}"></h4>
+                            <small class="text-muted">Required</small>
+                        </div>
+                        <div class="col-4 border-start border-end">
+                            <h4 th:text="${compliance.actualOfficeDaysVisited}" class="text-primary"></h4>
+                            <small class="text-muted">Visited</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 th:text="${compliance.remainingOfficeDays}" class="text-danger"></h4>
+                            <small class="text-muted">Remaining</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

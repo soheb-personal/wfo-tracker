@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Configure Employee Monthly Attendance')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Configure Monthly Attendance</h4>
+                </div>
+                <div class="card-body">
+                    <div th:replace="~{fragments/layout :: alerts}"></div>
+                    <form th:action="@{/manager/employee/configure/{id}(id=${employeeId})}" th:object="${monthlyConfigRequest}" method="post">
+                        
+                        <input type="hidden" th:field="*{month}">
+                        <input type="hidden" th:field="*{year}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Period</label>
+                            <input type="text" class="form-control" th:value="${monthlyConfigRequest.month + '/' + monthlyConfigRequest.year}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="leaves" class="form-label">Leaves Taken</label>
+                            <input type="number" class="form-control" id="leaves" th:field="*{leaves}" min="0" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('leaves')}" th:errors="*{leaves}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="publicHolidays" class="form-label">Public Holidays</label>
+                            <input type="number" class="form-control" id="publicHolidays" th:field="*{publicHolidays}" min="0" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('publicHolidays')}" th:errors="*{publicHolidays}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="exceptionDays" class="form-label">Exception Days (Travel, Client visit, etc)</label>
+                            <input type="number" class="form-control" id="exceptionDays" th:field="*{exceptionDays}" min="0" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('exceptionDays')}" th:errors="*{exceptionDays}"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a th:href="@{/manager/dashboard}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

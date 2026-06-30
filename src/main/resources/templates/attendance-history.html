@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Attendance History')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Attendance History</h2>
+    </div>
+
+    <form method="get" class="row g-3 mb-4 align-items-end">
+        <div class="col-auto">
+            <label for="month" class="form-label">Month</label>
+            <select name="month" id="month" class="form-select">
+                <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m}" th:selected="${m == currentMonth}"></option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <label for="year" class="form-label">Year</label>
+            <input type="number" name="year" id="year" class="form-control" th:value="${currentYear}" required min="2000" max="2100">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-secondary">Filter</button>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Hours Spent</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="att : ${history}">
+                    <td th:text="${att.officeDate}"></td>
+                    <td th:text="${att.checkIn != null ? #temporals.format(att.checkIn, 'HH:mm:ss') : '-'}"></td>
+                    <td th:text="${att.checkOut != null ? #temporals.format(att.checkOut, 'HH:mm:ss') : '-'}"></td>
+                    <td th:text="${att.hoursSpent != null ? att.hoursSpent + ' hrs' : '-'}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(history)}">
+                    <td colspan="4" class="text-center">No attendance records found for this period.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

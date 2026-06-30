@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Create Team')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create New Team</h4>
+                </div>
+                <div class="card-body">
+                    <div th:replace="~{fragments/layout :: alerts}"></div>
+                    <form th:action="@{/admin/team/create}" th:object="${createTeamRequest}" method="post">
+                        
+                        <div class="mb-3">
+                            <label for="teamName" class="form-label">Team Name</label>
+                            <input type="text" class="form-control" id="teamName" th:field="*{teamName}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('teamName')}" th:errors="*{teamName}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="managerName" class="form-label">Manager Full Name</label>
+                            <input type="text" class="form-control" id="managerName" th:field="*{managerName}" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('managerName')}" th:errors="*{managerName}"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a th:href="@{/admin/dashboard}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Team</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

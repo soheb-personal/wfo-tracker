@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin Dashboard')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container mt-4">
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Teams Management</h2>
+        <a th:href="@{/admin/team/create}" class="btn btn-primary">Create New Team</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Team Name</th>
+                    <th>Manager Name</th>
+                    <th>Manager Username</th>
+                    <th>Status</th>
+                    <th>Employees Count</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="team : ${teams}">
+                    <td th:text="${team.teamName}"></td>
+                    <td th:text="${team.managerName}"></td>
+                    <td th:text="${team.managerUsername}"></td>
+                    <td>
+                        <span th:if="${team.active}" class="badge bg-success">Active</span>
+                        <span th:unless="${team.active}" class="badge bg-danger">Deactivated</span>
+                    </td>
+                    <td th:text="${team.employees.size()}"></td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <a th:href="@{/admin/team/edit/{id}(id=${team.id})}" class="btn btn-sm btn-outline-primary" th:if="${team.active}">Edit</a>
+                            
+                            <form th:action="@{/admin/manager/reset-password/{id}(id=${team.managerId})}" method="post" th:if="${team.active}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Reset manager password to default?')">Reset Pwd</button>
+                            </form>
+
+                            <form th:action="@{/admin/team/deactivate/{id}(id=${team.id})}" method="post" th:if="${team.active}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate team and all members?')">Deactivate</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(teams)}">
+                    <td colspan="6" class="text-center">No teams found.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>
