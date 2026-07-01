@@ -3,6 +3,7 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
+    command: --innodb-buffer-pool-size=64M --key-buffer-size=16M --max-connections=20
     container_name: wfotracker-db
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -11,6 +12,10 @@ services:
       - "33306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          memory: 350M
 
   app:
     build: .
@@ -23,7 +28,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/wfotracker?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      JAVA_OPTS: "-Xmx256m -Xms128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
     restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 450M
 
 volumes:
   mysql-data:
