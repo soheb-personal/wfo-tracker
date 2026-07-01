@@ -404,6 +404,7 @@ Fields
 * Leaves
 * Public Holidays
 * Exception Days
+* Manual Checkin
 
 Example
 

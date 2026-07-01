@@ -39,4 +39,7 @@ public class MonthlyConfiguration extends BaseEntity {
 
     @Column(name = "required_office_days", nullable = false)
     private int requiredOfficeDays = 0;
+
+    @Column(name = "manual_checkins", nullable = false)
+    private int manualCheckins = 0;
 }

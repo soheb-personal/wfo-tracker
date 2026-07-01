@@ -148,7 +148,14 @@ public class ManagerController {
 
         var config = managerService.getMonthlyConfig(userDetails.getId(), id, m, y);
         
-        MonthlyConfigRequest request = new MonthlyConfigRequest(config.getLeaves(), config.getPublicHolidays(), config.getExceptionDays(), m, y);
+        MonthlyConfigRequest request = new MonthlyConfigRequest(
+                config.getLeaves(), 
+                config.getPublicHolidays(), 
+                config.getExceptionDays(), 
+                config.getManualCheckins(), 
+                m, 
+                y
+        );
         model.addAttribute("monthlyConfigRequest", request);
         model.addAttribute("employeeId", id);
         return "employee-config";

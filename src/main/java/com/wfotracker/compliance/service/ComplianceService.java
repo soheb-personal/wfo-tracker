@@ -31,7 +31,8 @@ public class ComplianceService {
                     return defaultConfig;
                 });
 
-        int visitedDays = attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(employee.getId(), month, year);
+        int recordedVisitedDays = attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(employee.getId(), month, year);
+        int visitedDays = recordedVisitedDays + config.getManualCheckins();
         int requiredDays = config.getRequiredOfficeDays();
         int remainingDays = Math.max(0, requiredDays - visitedDays);
         int compliancePercentage = requiredDays > 0 ? (int) Math.round(((double) visitedDays / requiredDays) * 100) : 100;
@@ -46,6 +47,7 @@ public class ComplianceService {
                 config.getLeaves(),
                 config.getPublicHolidays(),
                 config.getExceptionDays(),
+                config.getManualCheckins(),
                 requiredDays,
                 visitedDays,
                 remainingDays,

@@ -49,7 +49,10 @@
                         <span th:unless="${emp.active}" class="badge bg-danger">Deactivated</span>
                     </td>
                     <td th:text="${emp.requiredOfficeDays}"></td>
-                    <td th:text="${emp.actualOfficeDaysVisited}"></td>
+                    <td>
+                        <span th:text="${emp.actualOfficeDaysVisited}"></span>
+                        <div th:if="${emp.manualCheckins > 0}" class="text-muted" style="font-size: 0.8rem;" th:text="'+ ' + ${emp.manualCheckins} + ' Manual'"></div>
+                    </td>
                     <td th:text="${emp.remainingOfficeDays}"></td>
                     <td>
                         <div class="progress">

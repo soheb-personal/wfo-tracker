@@ -9,6 +9,7 @@ public record EmployeeComplianceDto(
         int leaves,
         int publicHolidays,
         int exceptionDays,
+        int manualCheckins,
         int requiredOfficeDays,
         int actualOfficeDaysVisited,
         int remainingOfficeDays,

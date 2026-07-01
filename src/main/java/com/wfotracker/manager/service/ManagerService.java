@@ -111,6 +111,7 @@ public class ManagerService {
         config.setLeaves(request.leaves());
         config.setPublicHolidays(request.publicHolidays());
         config.setExceptionDays(request.exceptionDays());
+        config.setManualCheckins(request.manualCheckins());
         
         int requiredDays = calculateRequiredDays(workingDays, request.leaves(), request.publicHolidays(), request.exceptionDays());
         config.setRequiredOfficeDays(requiredDays);

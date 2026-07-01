@@ -41,6 +41,12 @@
                             <div class="text-danger" th:if="${#fields.hasErrors('exceptionDays')}" th:errors="*{exceptionDays}"></div>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="manualCheckins" class="form-label">Manual Check-ins (Forgot check-in/out coverup)</label>
+                            <input type="number" class="form-control" id="manualCheckins" th:field="*{manualCheckins}" min="0" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('manualCheckins')}" th:errors="*{manualCheckins}"></div>
+                        </div>
+
                         <div class="d-flex justify-content-between">
                             <a th:href="@{/manager/dashboard}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">Save Configuration</button>
