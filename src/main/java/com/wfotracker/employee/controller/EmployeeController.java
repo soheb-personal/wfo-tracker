@@ -1,10 +1,7 @@
 package com.wfotracker.employee.controller;
 
-import com.wfotracker.common.security.CustomUserDetails;
-import com.wfotracker.compliance.service.ComplianceService;
-import com.wfotracker.employee.service.EmployeeService;
-import com.wfotracker.manager.dto.EmployeeComplianceDto;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDate;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,7 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDate;
+import com.wfotracker.common.security.CustomUserDetails;
+import com.wfotracker.compliance.service.ComplianceService;
+import com.wfotracker.employee.service.EmployeeService;
+import com.wfotracker.manager.dto.EmployeeComplianceDto;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequestMapping("/employee")
@@ -27,17 +29,19 @@ public class EmployeeController {
     @GetMapping("/dashboard")
     public String dashboard(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
         LocalDate now = LocalDate.now();
-        EmployeeComplianceDto compliance = complianceService.getComplianceForEmployee(userDetails.getUser(), now.getMonthValue(), now.getYear());
-        
+        EmployeeComplianceDto compliance =
+                complianceService.getComplianceForEmployee(userDetails.getUser(), now.getMonthValue(), now.getYear());
+
         model.addAttribute("compliance", compliance);
         model.addAttribute("isCheckedIn", employeeService.isCheckedInToday(userDetails.getId()));
         model.addAttribute("isCheckedOut", employeeService.isCheckedOutToday(userDetails.getId()));
-        
+
         return "employee-dashboard";
     }
 
     @PostMapping("/checkin")
-    public String checkIn(@AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+    public String checkIn(
+            @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
         try {
             employeeService.checkIn(userDetails.getId());
             redirectAttributes.addFlashAttribute("success", "Checked in successfully.");
@@ -48,7 +52,8 @@ public class EmployeeController {
     }
 
     @PostMapping("/checkout")
-    public String checkOut(@AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+    public String checkOut(
+            @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
         try {
             employeeService.checkOut(userDetails.getId());
             redirectAttributes.addFlashAttribute("success", "Checked out successfully.");
@@ -59,10 +64,11 @@ public class EmployeeController {
     }
 
     @GetMapping("/history")
-    public String history(@RequestParam(required = false) Integer month,
-                          @RequestParam(required = false) Integer year,
-                          @AuthenticationPrincipal CustomUserDetails userDetails,
-                          Model model) {
+    public String history(
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            Model model) {
         int m = month != null ? month : LocalDate.now().getMonthValue();
         int y = year != null ? year : LocalDate.now().getYear();
 

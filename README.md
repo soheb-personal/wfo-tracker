@@ -15,35 +15,35 @@ The application is built as a monolithic Spring Boot backend rendering Thymeleaf
 ## Installation & Running Locally
 
 1. **Clone the repository:**
-   ```bash
-   git clone <repo-url>
-   cd wfotracker
-   ```
+```bash
+git clone <repo-url>
+cd wfotracker
+```
 
 2. **Start MySQL database:**
-   You can use docker-compose to start only the database:
-   ```bash
-   docker-compose up -d mysql
-   ```
+You can use docker-compose to start only the database:
+```bash
+docker-compose up -d mysql
+```
 
 3. **Run the Spring Boot application:**
-   ```bash
-   ./mvnw spring-boot:run
-   ```
+```bash
+./mvnw spring-boot:run
+```
 
 ## Running via Docker Compose
 
 To start both the application and the database using Docker Compose:
 
 1. **Build the JAR:**
-   ```bash
-   ./mvnw clean package -DskipTests
-   ```
+```bash
+./mvnw clean package -DskipTests
+```
 
 2. **Build and start containers:**
-   ```bash
-   docker-compose up --build -d
-   ```
+```bash
+docker-compose up --build -d
+```
 
 ## Login Credentials
 

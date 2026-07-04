@@ -366,9 +366,9 @@ Formula
 Required Office Days =
 
 (Total Working Days
- - Leaves
- - Public Holidays
- - Exception Days)
+- Leaves
+- Public Holidays
+- Exception Days)
 
 * 50%
 ```
@@ -664,10 +664,10 @@ src/main/resources/db/migration
 
 ```sql
 CREATE TABLE team (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  team_name VARCHAR(100) NOT NULL,
-  active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+id BIGINT PRIMARY KEY AUTO_INCREMENT,
+team_name VARCHAR(100) NOT NULL,
+active BOOLEAN DEFAULT TRUE,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -679,27 +679,27 @@ Single table for all users.
 
 ```sql
 CREATE TABLE users (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
-  full_name VARCHAR(100) NOT NULL,
+full_name VARCHAR(100) NOT NULL,
 
-  username VARCHAR(50) UNIQUE NOT NULL,
+username VARCHAR(50) UNIQUE NOT NULL,
 
-  password VARCHAR(100) NOT NULL,
+password VARCHAR(100) NOT NULL,
 
-  role VARCHAR(20) NOT NULL,
+role VARCHAR(20) NOT NULL,
 
-  password_changed BOOLEAN DEFAULT FALSE,
+password_changed BOOLEAN DEFAULT FALSE,
 
-  active BOOLEAN DEFAULT TRUE,
+active BOOLEAN DEFAULT TRUE,
 
-  team_id BIGINT,
+team_id BIGINT,
 
-  manager_id BIGINT,
+manager_id BIGINT,
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-  FOREIGN KEY(team_id) REFERENCES team(id)
+FOREIGN KEY(team_id) REFERENCES team(id)
 );
 ```
 
@@ -722,27 +722,27 @@ Stores manager-defined exceptions.
 ```sql
 CREATE TABLE monthly_configuration (
 
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
-  employee_id BIGINT NOT NULL,
+employee_id BIGINT NOT NULL,
 
-  month INT NOT NULL,
+month INT NOT NULL,
 
-  year INT NOT NULL,
+year INT NOT NULL,
 
-  working_days INT NOT NULL,
+working_days INT NOT NULL,
 
-  leaves INT DEFAULT 0,
+leaves INT DEFAULT 0,
 
-  public_holidays INT DEFAULT 0,
+public_holidays INT DEFAULT 0,
 
-  exception_days INT DEFAULT 0,
+exception_days INT DEFAULT 0,
 
-  required_office_days INT DEFAULT 0,
+required_office_days INT DEFAULT 0,
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-  FOREIGN KEY(employee_id) REFERENCES users(id)
+FOREIGN KEY(employee_id) REFERENCES users(id)
 );
 ```
 
@@ -753,21 +753,21 @@ CREATE TABLE monthly_configuration (
 ```sql
 CREATE TABLE attendance (
 
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
-  employee_id BIGINT NOT NULL,
+employee_id BIGINT NOT NULL,
 
-  office_date DATE NOT NULL,
+office_date DATE NOT NULL,
 
-  check_in TIMESTAMP,
+check_in TIMESTAMP,
 
-  check_out TIMESTAMP,
+check_out TIMESTAMP,
 
-  hours_spent DECIMAL(5,2),
+hours_spent DECIMAL(5,2),
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-  FOREIGN KEY(employee_id) REFERENCES users(id)
+FOREIGN KEY(employee_id) REFERENCES users(id)
 );
 ```
 
@@ -877,20 +877,20 @@ MonthlyConfigurationService
 
 ```java
 public int calculateRequiredDays(
-        int workingDays,
-        int leaves,
-        int publicHoliday,
-        int exceptionDays){
+		int workingDays,
+		int leaves,
+		int publicHoliday,
+		int exceptionDays){
 
-    int effectiveDays =
-            workingDays
-            - leaves
-            - publicHoliday
-            - exceptionDays;
+	int effectiveDays =
+			workingDays
+			- leaves
+			- publicHoliday
+			- exceptionDays;
 
-    return (int) Math.ceil(
-            effectiveDays * 0.50
-    );
+	return (int) Math.ceil(
+			effectiveDays * 0.50
+	);
 }
 ```
 
@@ -915,51 +915,51 @@ version: '3.8'
 
 services:
 
-  mysql:
+mysql:
 
-    image: mysql:8
+	image: mysql:8
 
-    container_name: wfotracker-db
+	container_name: wfotracker-db
 
-    environment:
+	environment:
 
-      MYSQL_ROOT_PASSWORD: root
+	MYSQL_ROOT_PASSWORD: root
 
-      MYSQL_DATABASE: wfotracker
+	MYSQL_DATABASE: wfotracker
 
-    ports:
+	ports:
 
-      - "3306:3306"
+	- "3306:3306"
 
-    volumes:
+	volumes:
 
-      - mysql-data:/var/lib/mysql
+	- mysql-data:/var/lib/mysql
 
-  app:
+app:
 
-    build: .
+	build: .
 
-    container_name: wfotracker-app
+	container_name: wfotracker-app
 
-    depends_on:
+	depends_on:
 
-      - mysql
+	- mysql
 
-    ports:
+	ports:
 
-      - "8080:8080"
+	- "8080:8080"
 
-    environment:
+	environment:
 
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/wfotracker
+	SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/wfotracker
 
-      SPRING_DATASOURCE_USERNAME: root
+	SPRING_DATASOURCE_USERNAME: root
 
-      SPRING_DATASOURCE_PASSWORD: root
+	SPRING_DATASOURCE_PASSWORD: root
 
 volumes:
 
-  mysql-data:
+mysql-data:
 ```
 
 ---
@@ -969,18 +969,18 @@ volumes:
 ```yaml
 spring:
 
-  datasource:
-    url: jdbc:mysql://localhost:3306/wfotracker
-    username: root
-    password: root
+datasource:
+	url: jdbc:mysql://localhost:3306/wfotracker
+	username: root
+	password: root
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
+jpa:
+	hibernate:
+	ddl-auto: validate
 
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
+flyway:
+	enabled: true
+	baseline-on-migrate: true
 ```
 
 ---

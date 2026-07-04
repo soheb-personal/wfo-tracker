@@ -1,13 +1,15 @@
 package com.wfotracker.auth.service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.wfotracker.auth.dto.ChangePasswordRequest;
 import com.wfotracker.common.security.CustomUserDetails;
 import com.wfotracker.domain.entity.User;
 import com.wfotracker.domain.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +24,8 @@ public class AuthService {
             throw new IllegalArgumentException("Passwords do not match");
         }
 
-        User user = userRepository.findById(userDetails.getId())
+        User user = userRepository
+                .findById(userDetails.getId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));

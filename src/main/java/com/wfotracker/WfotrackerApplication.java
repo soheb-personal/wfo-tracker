@@ -9,5 +9,4 @@ public class WfotrackerApplication {
     public static void main(String[] args) {
         SpringApplication.run(WfotrackerApplication.class, args);
     }
-
 }

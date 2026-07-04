@@ -1,19 +1,21 @@
 package com.wfotracker.employee.service;
 
-import com.wfotracker.domain.entity.Attendance;
-import com.wfotracker.domain.entity.User;
-import com.wfotracker.domain.repository.AttendanceRepository;
-import com.wfotracker.domain.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.wfotracker.domain.entity.Attendance;
+import com.wfotracker.domain.entity.User;
+import com.wfotracker.domain.repository.AttendanceRepository;
+import com.wfotracker.domain.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -24,11 +26,14 @@ public class EmployeeService {
 
     @Transactional
     public void checkIn(Long employeeId) {
-        User employee = userRepository.findById(employeeId)
+        User employee = userRepository
+                .findById(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
         LocalDate today = LocalDate.now();
-        if (attendanceRepository.findByEmployeeIdAndOfficeDate(employeeId, today).isPresent()) {
+        if (attendanceRepository
+                .findByEmployeeIdAndOfficeDate(employeeId, today)
+                .isPresent()) {
             throw new IllegalStateException("Already checked in for today");
         }
 
@@ -43,7 +48,8 @@ public class EmployeeService {
     @Transactional
     public void checkOut(Long employeeId) {
         LocalDate today = LocalDate.now();
-        Attendance attendance = attendanceRepository.findByEmployeeIdAndOfficeDate(employeeId, today)
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndOfficeDate(employeeId, today)
                 .orElseThrow(() -> new IllegalStateException("No check-in found for today"));
 
         if (attendance.getCheckOut() != null) {
@@ -54,8 +60,8 @@ public class EmployeeService {
         attendance.setCheckOut(now);
 
         Duration duration = Duration.between(attendance.getCheckIn(), now);
-        BigDecimal hoursSpent = BigDecimal.valueOf(duration.toMinutes())
-                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        BigDecimal hoursSpent =
+                BigDecimal.valueOf(duration.toMinutes()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
         attendance.setHoursSpent(hoursSpent);
 
         attendanceRepository.save(attendance);
@@ -68,14 +74,16 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public boolean isCheckedInToday(Long employeeId) {
-        return attendanceRepository.findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now())
+        return attendanceRepository
+                .findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now())
                 .map(a -> a.getCheckIn() != null && a.getCheckOut() == null)
                 .orElse(false);
     }
 
     @Transactional(readOnly = true)
     public boolean isCheckedOutToday(Long employeeId) {
-        return attendanceRepository.findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now())
+        return attendanceRepository
+                .findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now())
                 .map(a -> a.getCheckOut() != null)
                 .orElse(false);
     }

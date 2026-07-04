@@ -8,11 +8,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "teams")
+@Table(name = "roles")
 @Getter
 @Setter
-public class Team extends BaseEntity {
+public class Role extends BaseEntity {
 
-    @Column(name = "team_name", nullable = false, unique = true, length = 100)
-    private String teamName;
+    @Column(name = "name", nullable = false, unique = true, length = 50)
+    private String name;
 }

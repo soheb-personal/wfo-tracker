@@ -13,5 +13,4 @@ public record EmployeeComplianceDto(
         int requiredOfficeDays,
         int actualOfficeDaysVisited,
         int remainingOfficeDays,
-        int compliancePercentage
-) {}
+        int compliancePercentage) {}

@@ -1,21 +1,29 @@
 package com.wfotracker.manager.service;
 
-import com.wfotracker.common.constants.Role;
-import com.wfotracker.domain.entity.MonthlyConfiguration;
-import com.wfotracker.domain.entity.User;
-import com.wfotracker.domain.repository.MonthlyConfigurationRepository;
-import com.wfotracker.domain.repository.UserRepository;
-import com.wfotracker.manager.dto.AddEmployeeRequest;
-import com.wfotracker.manager.dto.EditEmployeeRequest;
-import com.wfotracker.manager.dto.MonthlyConfigRequest;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.util.List;
+import com.wfotracker.common.constants.Role;
+import com.wfotracker.domain.entity.EmployeeMembership;
+import com.wfotracker.domain.entity.MonthlyConfiguration;
+import com.wfotracker.domain.entity.Team;
+import com.wfotracker.domain.entity.TeamManager;
+import com.wfotracker.domain.entity.User;
+import com.wfotracker.domain.repository.EmployeeMembershipRepository;
+import com.wfotracker.domain.repository.MonthlyConfigurationRepository;
+import com.wfotracker.domain.repository.RoleRepository;
+import com.wfotracker.domain.repository.TeamManagerRepository;
+import com.wfotracker.domain.repository.UserRepository;
+import com.wfotracker.manager.dto.AddEmployeeRequest;
+import com.wfotracker.manager.dto.EditEmployeeRequest;
+import com.wfotracker.manager.dto.MonthlyConfigRequest;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +32,9 @@ public class ManagerService {
     private final UserRepository userRepository;
     private final MonthlyConfigurationRepository monthlyConfigRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final TeamManagerRepository teamManagerRepository;
+    private final EmployeeMembershipRepository employeeMembershipRepository;
 
     @Transactional(readOnly = true)
     public List<User> getEmployeesForManager(Long managerId) {
@@ -32,8 +43,13 @@ public class ManagerService {
 
     @Transactional
     public void addEmployee(Long managerId, AddEmployeeRequest request) {
-        User manager = userRepository.findById(managerId)
-                .orElseThrow(() -> new IllegalArgumentException("Manager not found"));
+        User manager =
+                userRepository.findById(managerId).orElseThrow(() -> new IllegalArgumentException("Manager not found"));
+
+        TeamManager teamManager = teamManagerRepository
+                .findByManagerIdAndActiveTrue(managerId)
+                .orElseThrow(() -> new IllegalArgumentException("Manager is not currently assigned to any team"));
+        Team team = teamManager.getTeam();
 
         User employee = new User();
         employee.setFullName(request.employeeName());
@@ -43,15 +59,26 @@ public class ManagerService {
         String username = getUniqueUsername(firstName);
         employee.setUsername(username);
 
-        String surnameInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase() : "";
+        String surnameInitial = nameParts.length > 1
+                ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
+                : "";
         String defaultPassword = firstName + surnameInitial + "@123";
 
         employee.setPassword(passwordEncoder.encode(defaultPassword));
-        employee.setRole(Role.EMPLOYEE);
-        employee.setManager(manager);
-        employee.setTeam(manager.getTeam());
 
-        userRepository.save(employee);
+        com.wfotracker.domain.entity.Role employeeRole = roleRepository
+                .findByName("ROLE_EMPLOYEE")
+                .orElseThrow(() -> new IllegalStateException("ROLE_EMPLOYEE role not found"));
+        employee.getRoles().add(employeeRole);
+
+        employee = userRepository.save(employee);
+
+        EmployeeMembership membership = new EmployeeMembership();
+        membership.setEmployee(employee);
+        membership.setTeam(team);
+        membership.setManager(manager);
+        membership.setActive(true);
+        employeeMembershipRepository.save(membership);
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +105,8 @@ public class ManagerService {
     public void deactivateEmployee(Long managerId, Long employeeId) {
         User employee = validateAndGetEmployee(managerId, employeeId);
         employee.setActive(false);
+
+        employeeMembershipRepository.findByEmployeeIdAndActiveTrue(employeeId).ifPresent(m -> m.setActive(false));
     }
 
     @Transactional
@@ -86,7 +115,9 @@ public class ManagerService {
 
         String[] nameParts = employee.getFullName().trim().split("\\s+");
         String firstName = nameParts[0].toLowerCase();
-        String surnameInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase() : "";
+        String surnameInitial = nameParts.length > 1
+                ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
+                : "";
         String defaultPassword = firstName + surnameInitial + "@123";
 
         employee.setPassword(passwordEncoder.encode(defaultPassword));
@@ -104,25 +135,27 @@ public class ManagerService {
         config.setEmployee(employee);
         config.setMonth(request.month());
         config.setYear(request.year());
-        
+
         int workingDays = calculateWorkingDays(request.year(), request.month());
         config.setWorkingDays(workingDays);
-        
+
         config.setLeaves(request.leaves());
         config.setPublicHolidays(request.publicHolidays());
         config.setExceptionDays(request.exceptionDays());
         config.setManualCheckins(request.manualCheckins());
-        
-        int requiredDays = calculateRequiredDays(workingDays, request.leaves(), request.publicHolidays(), request.exceptionDays());
+
+        int requiredDays =
+                calculateRequiredDays(workingDays, request.leaves(), request.publicHolidays(), request.exceptionDays());
         config.setRequiredOfficeDays(requiredDays);
 
         monthlyConfigRepository.save(config);
     }
-    
+
     @Transactional(readOnly = true)
     public MonthlyConfiguration getMonthlyConfig(Long managerId, Long employeeId, int month, int year) {
         validateAndGetEmployee(managerId, employeeId);
-        return monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(employeeId, month, year)
+        return monthlyConfigRepository
+                .findByEmployeeIdAndMonthAndYear(employeeId, month, year)
                 .orElseGet(() -> {
                     MonthlyConfiguration config = new MonthlyConfiguration();
                     config.setMonth(month);
@@ -134,10 +167,15 @@ public class ManagerService {
     }
 
     private User validateAndGetEmployee(Long managerId, Long employeeId) {
-        User employee = userRepository.findById(employeeId)
+        User employee = userRepository
+                .findById(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
-        if (!employee.getManager().getId().equals(managerId)) {
+        EmployeeMembership membership = employeeMembershipRepository
+                .findByEmployeeIdAndActiveTrue(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Employee does not have an active membership"));
+
+        if (!membership.getManager().getId().equals(managerId)) {
             throw new IllegalArgumentException("You are not authorized to manage this employee");
         }
 
@@ -153,12 +191,12 @@ public class ManagerService {
         }
         return username;
     }
-    
+
     private int calculateWorkingDays(int year, int month) {
         YearMonth yearMonth = YearMonth.of(year, month);
         int daysInMonth = yearMonth.lengthOfMonth();
         int workingDays = 0;
-        
+
         for (int i = 1; i <= daysInMonth; i++) {
             LocalDate date = LocalDate.of(year, month, i);
             if (date.getDayOfWeek().getValue() < 6) { // Monday to Friday

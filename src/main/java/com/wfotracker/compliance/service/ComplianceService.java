@@ -1,16 +1,18 @@
 package com.wfotracker.compliance.service;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.wfotracker.domain.entity.MonthlyConfiguration;
 import com.wfotracker.domain.entity.User;
 import com.wfotracker.domain.repository.AttendanceRepository;
 import com.wfotracker.domain.repository.MonthlyConfigurationRepository;
 import com.wfotracker.manager.dto.EmployeeComplianceDto;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +23,7 @@ public class ComplianceService {
 
     @Transactional(readOnly = true)
     public EmployeeComplianceDto getComplianceForEmployee(User employee, int month, int year) {
-        
+
         MonthlyConfiguration config = monthlyConfigRepository
                 .findByEmployeeIdAndMonthAndYear(employee.getId(), month, year)
                 .orElseGet(() -> {
@@ -31,11 +33,13 @@ public class ComplianceService {
                     return defaultConfig;
                 });
 
-        int recordedVisitedDays = attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(employee.getId(), month, year);
+        int recordedVisitedDays =
+                attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(employee.getId(), month, year);
         int visitedDays = recordedVisitedDays + config.getManualCheckins();
         int requiredDays = config.getRequiredOfficeDays();
         int remainingDays = Math.max(0, requiredDays - visitedDays);
-        int compliancePercentage = requiredDays > 0 ? (int) Math.round(((double) visitedDays / requiredDays) * 100) : 100;
+        int compliancePercentage =
+                requiredDays > 0 ? (int) Math.round(((double) visitedDays / requiredDays) * 100) : 100;
         if (compliancePercentage > 100) compliancePercentage = 100;
 
         return new EmployeeComplianceDto(
@@ -51,17 +55,16 @@ public class ComplianceService {
                 requiredDays,
                 visitedDays,
                 remainingDays,
-                compliancePercentage
-        );
+                compliancePercentage);
     }
-    
+
     private int calculateWorkingDays(int year, int month) {
         YearMonth yearMonth = YearMonth.of(year, month);
         int daysInMonth = yearMonth.lengthOfMonth();
         int workingDays = 0;
         for (int i = 1; i <= daysInMonth; i++) {
             LocalDate date = LocalDate.of(year, month, i);
-            if (date.getDayOfWeek().getValue() < 6) { 
+            if (date.getDayOfWeek().getValue() < 6) {
                 workingDays++;
             }
         }

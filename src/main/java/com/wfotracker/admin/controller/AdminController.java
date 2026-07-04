@@ -1,10 +1,7 @@
 package com.wfotracker.admin.controller;
 
-import com.wfotracker.admin.dto.CreateTeamRequest;
-import com.wfotracker.admin.dto.EditTeamRequest;
-import com.wfotracker.admin.service.AdminService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -14,6 +11,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.wfotracker.admin.dto.CreateTeamRequest;
+import com.wfotracker.admin.dto.EditTeamRequest;
+import com.wfotracker.admin.service.AdminService;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequestMapping("/admin")
@@ -35,10 +38,11 @@ public class AdminController {
     }
 
     @PostMapping("/team/create")
-    public String createTeam(@Valid @ModelAttribute("createTeamRequest") CreateTeamRequest request,
-                             BindingResult bindingResult,
-                             RedirectAttributes redirectAttributes,
-                             Model model) {
+    public String createTeam(
+            @Valid @ModelAttribute("createTeamRequest") CreateTeamRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
         if (bindingResult.hasErrors()) {
             return "team-form";
         }
@@ -67,11 +71,12 @@ public class AdminController {
     }
 
     @PostMapping("/team/edit/{id}")
-    public String editTeam(@PathVariable Long id,
-                           @Valid @ModelAttribute("editTeamRequest") EditTeamRequest request,
-                           BindingResult bindingResult,
-                           RedirectAttributes redirectAttributes,
-                           Model model) {
+    public String editTeam(
+            @PathVariable Long id,
+            @Valid @ModelAttribute("editTeamRequest") EditTeamRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("teamId", id);
             return "team-edit";
