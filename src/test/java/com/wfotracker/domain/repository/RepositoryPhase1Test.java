@@ -113,7 +113,7 @@ class RepositoryPhase1Test {
         manager2.setFullName("Manager Two");
         manager2.setUsername("mgr2");
         manager2.setPassword("password");
-        manager2 = userRepository.save(manager2);
+        userRepository.save(manager2);
 
         // Assign manager1 to team1 (valid)
         TeamManager tm1 = new TeamManager();

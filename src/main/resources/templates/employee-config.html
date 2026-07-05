@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Configure Employee Monthly Attendance')}"></head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Configure Employee Monthly Attendance')}">
+    <title>Configure Employee Monthly Attendance - WFO Tracker</title>
+</head>
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
@@ -19,8 +21,8 @@
                         <input type="hidden" th:field="*{year}">
 
                         <div class="mb-3">
-                            <label class="form-label">Period</label>
-                            <input type="text" class="form-control" th:value="${monthlyConfigRequest.month + '/' + monthlyConfigRequest.year}" disabled>
+                            <label for="period" class="form-label">Period</label>
+                            <input type="text" class="form-control" id="period" th:value="${monthlyConfigRequest.month + '/' + monthlyConfigRequest.year}" disabled>
                         </div>
 
                         <div class="mb-3">

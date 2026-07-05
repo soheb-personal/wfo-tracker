@@ -18,7 +18,9 @@ import lombok.Setter;
 @Table(name = "users")
 @Getter
 @Setter
-public class User extends BaseEntity {
+public class User extends BaseEntity implements java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;

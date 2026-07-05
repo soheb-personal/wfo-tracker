@@ -46,7 +46,7 @@ Use BCryptPasswordEncoder.
 
 Rules:
 - Never store plaintext password
-- Admin password auto-generated random 10 chars on startup
+- Admin password: admin@123
 - Manager/Employee default password:
 firstname + surnameInitial + @123
 - password_changed=false on first creation/reset

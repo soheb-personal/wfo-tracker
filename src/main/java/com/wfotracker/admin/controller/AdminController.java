@@ -23,73 +23,83 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminController {
 
+    private static final String REDIRECT_ADMIN_DASHBOARD = "redirect:/admin/dashboard";
+    private static final String TEMPLATE_TEAM_FORM = "team-form";
+    private static final String TEMPLATE_TEAM_EDIT = "team-edit";
+    private static final String ATTR_SUCCESS = "success";
+    private static final String ATTR_ERROR = "error";
+    private static final String ATTR_TEAM_ID = "teamId";
+    private static final String ATTR_TEAMS = "teams";
+    private static final String ATTR_CREATE_TEAM_REQUEST = "createTeamRequest";
+    private static final String ATTR_EDIT_TEAM_REQUEST = "editTeamRequest";
+
     private final AdminService adminService;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        model.addAttribute("teams", adminService.getAllTeams());
+        model.addAttribute(ATTR_TEAMS, adminService.getAllTeams());
         return "admin-dashboard";
     }
 
     @GetMapping("/team/create")
     public String showCreateTeamForm(Model model) {
-        model.addAttribute("createTeamRequest", new CreateTeamRequest("", ""));
-        return "team-form";
+        model.addAttribute(ATTR_CREATE_TEAM_REQUEST, new CreateTeamRequest("", ""));
+        return TEMPLATE_TEAM_FORM;
     }
 
     @PostMapping("/team/create")
     public String createTeam(
-            @Valid @ModelAttribute("createTeamRequest") CreateTeamRequest request,
+            @Valid @ModelAttribute(ATTR_CREATE_TEAM_REQUEST) CreateTeamRequest request,
             BindingResult bindingResult,
             RedirectAttributes redirectAttributes,
             Model model) {
         if (bindingResult.hasErrors()) {
-            return "team-form";
+            return TEMPLATE_TEAM_FORM;
         }
 
         try {
             adminService.createTeam(request);
-            redirectAttributes.addFlashAttribute("success", "Team and Manager created successfully.");
-            return "redirect:/admin/dashboard";
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Team and Manager created successfully.");
+            return REDIRECT_ADMIN_DASHBOARD;
         } catch (IllegalArgumentException e) {
-            model.addAttribute("error", e.getMessage());
-            return "team-form";
+            model.addAttribute(ATTR_ERROR, e.getMessage());
+            return TEMPLATE_TEAM_FORM;
         }
     }
 
     @GetMapping("/team/list")
     public String listTeams(Model model) {
-        model.addAttribute("teams", adminService.getAllTeams());
+        model.addAttribute(ATTR_TEAMS, adminService.getAllTeams());
         return "team-list";
     }
 
     @GetMapping("/team/edit/{id}")
     public String showEditTeamForm(@PathVariable Long id, Model model) {
-        model.addAttribute("editTeamRequest", adminService.getTeamForEdit(id));
-        model.addAttribute("teamId", id);
-        return "team-edit";
+        model.addAttribute(ATTR_EDIT_TEAM_REQUEST, adminService.getTeamForEdit(id));
+        model.addAttribute(ATTR_TEAM_ID, id);
+        return TEMPLATE_TEAM_EDIT;
     }
 
     @PostMapping("/team/edit/{id}")
     public String editTeam(
             @PathVariable Long id,
-            @Valid @ModelAttribute("editTeamRequest") EditTeamRequest request,
+            @Valid @ModelAttribute(ATTR_EDIT_TEAM_REQUEST) EditTeamRequest request,
             BindingResult bindingResult,
             RedirectAttributes redirectAttributes,
             Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("teamId", id);
-            return "team-edit";
+            model.addAttribute(ATTR_TEAM_ID, id);
+            return TEMPLATE_TEAM_EDIT;
         }
 
         try {
             adminService.editTeam(id, request);
-            redirectAttributes.addFlashAttribute("success", "Team updated successfully.");
-            return "redirect:/admin/dashboard";
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Team updated successfully.");
+            return REDIRECT_ADMIN_DASHBOARD;
         } catch (IllegalArgumentException e) {
-            model.addAttribute("error", e.getMessage());
-            model.addAttribute("teamId", id);
-            return "team-edit";
+            model.addAttribute(ATTR_ERROR, e.getMessage());
+            model.addAttribute(ATTR_TEAM_ID, id);
+            return TEMPLATE_TEAM_EDIT;
         }
     }
 
@@ -97,21 +107,21 @@ public class AdminController {
     public String deactivateTeam(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             adminService.deactivateTeam(id);
-            redirectAttributes.addFlashAttribute("success", "Team deactivated successfully.");
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Team deactivated successfully.");
         } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute(ATTR_ERROR, e.getMessage());
         }
-        return "redirect:/admin/dashboard";
+        return REDIRECT_ADMIN_DASHBOARD;
     }
 
     @PostMapping("/manager/reset-password/{id}")
     public String resetManagerPassword(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             adminService.resetManagerPassword(id);
-            redirectAttributes.addFlashAttribute("success", "Manager password reset successfully.");
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Manager password reset successfully.");
         } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute(ATTR_ERROR, e.getMessage());
         }
-        return "redirect:/admin/dashboard";
+        return REDIRECT_ADMIN_DASHBOARD;
     }
 }

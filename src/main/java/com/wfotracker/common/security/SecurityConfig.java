@@ -35,30 +35,34 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth.requestMatchers(
-                                "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico", "/error")
-                        .permitAll()
-                        .requestMatchers("/login")
-                        .permitAll()
-                        .requestMatchers("/change-password")
-                        .authenticated()
-                        .requestMatchers("/admin/**")
-                        .hasRole("ADMIN")
-                        .requestMatchers("/manager/**")
-                        .hasRole("MANAGER")
-                        .requestMatchers("/employee/**")
-                        .hasRole("EMPLOYEE")
-                        .anyRequest()
-                        .authenticated())
-                .formLogin(form -> form.loginPage("/login")
-                        .successHandler(customAuthenticationSuccessHandler)
-                        .permitAll())
-                .logout(logout -> logout.logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll())
-                .addFilterAfter(passwordChangeFilter, UsernamePasswordAuthenticationFilter.class);
+    public SecurityFilterChain filterChain(HttpSecurity http) {
+        try {
+            http.authorizeHttpRequests(auth -> auth.requestMatchers(
+                                    "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico", "/error")
+                            .permitAll()
+                            .requestMatchers("/login")
+                            .permitAll()
+                            .requestMatchers("/change-password")
+                            .authenticated()
+                            .requestMatchers("/admin/**")
+                            .hasRole("ADMIN")
+                            .requestMatchers("/manager/**")
+                            .hasRole("MANAGER")
+                            .requestMatchers("/employee/**")
+                            .hasRole("EMPLOYEE")
+                            .anyRequest()
+                            .authenticated())
+                    .formLogin(form -> form.loginPage("/login")
+                            .successHandler(customAuthenticationSuccessHandler)
+                            .permitAll())
+                    .logout(logout -> logout.logoutUrl("/logout")
+                            .logoutSuccessUrl("/login?logout")
+                            .permitAll())
+                    .addFilterAfter(passwordChangeFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
+            return http.build();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to build security filter chain", e);
+        }
     }
 }

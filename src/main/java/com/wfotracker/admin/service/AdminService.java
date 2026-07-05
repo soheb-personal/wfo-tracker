@@ -1,7 +1,6 @@
 package com.wfotracker.admin.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminService {
 
+    private static final String MSG_TEAM_NAME_EXISTS = "Team name already exists";
+    private static final String MSG_TEAM_NOT_FOUND = "Team not found";
+    private static final String ROLE_MANAGER_NAME = "ROLE_MANAGER";
+    private static final String REGEX_WHITESPACE = "\\s+";
+    private static final String DEFAULT_PASS_SUFFIX = "@123";
+
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -33,13 +38,13 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<TeamDto> getAllTeams() {
-        return teamRepository.findAll().stream().map(this::mapToTeamDto).collect(Collectors.toList());
+        return teamRepository.findAll().stream().map(this::mapToTeamDto).toList();
     }
 
     @Transactional
     public void createTeam(CreateTeamRequest request) {
         if (teamRepository.existsByTeamName(request.teamName())) {
-            throw new IllegalArgumentException("Team name already exists");
+            throw new IllegalArgumentException(MSG_TEAM_NAME_EXISTS);
         }
 
         Team team = new Team();
@@ -49,7 +54,7 @@ public class AdminService {
         User manager = new User();
         manager.setFullName(request.managerName());
 
-        String[] nameParts = request.managerName().trim().split("\\s+");
+        String[] nameParts = request.managerName().trim().split(REGEX_WHITESPACE);
         String firstName = nameParts[0].toLowerCase();
         String username = getUniqueUsername(firstName);
         manager.setUsername(username);
@@ -57,12 +62,12 @@ public class AdminService {
         String surnameInitial = nameParts.length > 1
                 ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
                 : "";
-        String defaultPassword = firstName + surnameInitial + "@123";
+        String defaultPassword = firstName + surnameInitial + DEFAULT_PASS_SUFFIX;
         manager.setPassword(passwordEncoder.encode(defaultPassword));
 
         com.wfotracker.domain.entity.Role managerRole = roleRepository
-                .findByName("ROLE_MANAGER")
-                .orElseThrow(() -> new IllegalStateException("ROLE_MANAGER role not found"));
+                .findByName(ROLE_MANAGER_NAME)
+                .orElseThrow(() -> new IllegalStateException(ROLE_MANAGER_NAME + " role not found"));
         manager.getRoles().add(managerRole);
 
         manager = userRepository.save(manager);
@@ -75,7 +80,7 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public EditTeamRequest getTeamForEdit(Long teamId) {
-        Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException("Team not found"));
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException(MSG_TEAM_NOT_FOUND));
         User manager = getManagerForTeam(teamId);
 
         return new EditTeamRequest(
@@ -86,10 +91,10 @@ public class AdminService {
 
     @Transactional
     public void editTeam(Long teamId, EditTeamRequest request) {
-        Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException("Team not found"));
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException(MSG_TEAM_NOT_FOUND));
 
         if (!team.getTeamName().equals(request.teamName()) && teamRepository.existsByTeamName(request.teamName())) {
-            throw new IllegalArgumentException("Team name already exists");
+            throw new IllegalArgumentException(MSG_TEAM_NAME_EXISTS);
         }
 
         team.setTeamName(request.teamName());
@@ -109,7 +114,7 @@ public class AdminService {
 
     @Transactional
     public void deactivateTeam(Long teamId) {
-        Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException("Team not found"));
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException(MSG_TEAM_NOT_FOUND));
 
         team.setActive(false);
 
@@ -125,17 +130,17 @@ public class AdminService {
                 userRepository.findById(managerId).orElseThrow(() -> new IllegalArgumentException("Manager not found"));
 
         boolean isManager =
-                manager.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_MANAGER"));
+                manager.getRoles().stream().anyMatch(r -> r.getName().equals(ROLE_MANAGER_NAME));
         if (!isManager) {
             throw new IllegalArgumentException("User is not a manager");
         }
 
-        String[] nameParts = manager.getFullName().trim().split("\\s+");
+        String[] nameParts = manager.getFullName().trim().split(REGEX_WHITESPACE);
         String firstName = nameParts[0].toLowerCase();
         String surnameInitial = nameParts.length > 1
                 ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
                 : "";
-        String defaultPassword = firstName + surnameInitial + "@123";
+        String defaultPassword = firstName + surnameInitial + DEFAULT_PASS_SUFFIX;
 
         manager.setPassword(passwordEncoder.encode(defaultPassword));
         manager.setPasswordChanged(false);

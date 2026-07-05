@@ -11,8 +11,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.wfotracker.common.constants.Role;
-
 @Component
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
@@ -23,10 +21,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        if (!userDetails.isPasswordChanged()
-                && !authentication.getAuthorities().stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .anyMatch(role -> role.equals("ROLE_" + Role.ADMIN.name()))) {
+        if (userDetails == null || !userDetails.isPasswordChanged()) {
             response.sendRedirect("/change-password");
             return;
         }

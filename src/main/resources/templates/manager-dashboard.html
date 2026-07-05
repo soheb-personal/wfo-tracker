@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Manager Dashboard')}"></head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Manager Dashboard')}">
+    <title>Manager Dashboard - WFO Tracker</title>
+</head>
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
@@ -56,11 +58,10 @@
                     <td th:text="${emp.remainingOfficeDays}"></td>
                     <td>
                         <div class="progress">
-                            <div class="progress-bar" role="progressbar" 
-                                 th:style="'width: ' + ${emp.compliancePercentage} + '%'" 
+                            <progress class="progress-bar" max="100"
+                                 th:value="${emp.compliancePercentage}"
                                  th:classappend="${emp.compliancePercentage >= 100} ? 'bg-success' : (${emp.compliancePercentage >= 50} ? 'bg-warning' : 'bg-danger')"
-                                 th:text="${emp.compliancePercentage} + '%'"
-                                 th:attr="aria-valuenow=${emp.compliancePercentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                                 th:text="${emp.compliancePercentage} + '%'"></progress>
                         </div>
                     </td>
                     <td>

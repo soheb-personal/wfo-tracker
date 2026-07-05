@@ -50,7 +50,7 @@ docker-compose up --build -d
 Upon the very first execution, Flyway creates an admin user with the following credentials:
 
 - **Username:** `admin`
-- **Password:** `A9#Lm2@Qx7`
+- **Password:** `admin@123`
 - **Role:** `ADMIN`
 
 Admin can then create teams and managers. Managers will be provisioned with default passwords which they are forced to change upon first login. Employees are provisioned by managers.

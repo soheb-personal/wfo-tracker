@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Employee Dashboard')}"></head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Employee Dashboard')}">
+    <title>Employee Dashboard - WFO Tracker</title>
+</head>
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
@@ -60,28 +62,28 @@
                 </div>
                 <div class="card-body text-center d-flex flex-column justify-content-center">
                     <div class="mb-3">
-                        <h1 class="display-4 fw-bold" th:text="${compliance.compliancePercentage} + '%'"></h1>
+                        <h1 class="display-4 fw-bold" th:text="${compliance.compliancePercentage} + '%'">0%</h1>
                         <p class="text-muted mb-0">Compliance</p>
                     </div>
                     
                     <div class="progress mb-4">
-                        <div class="progress-bar" role="progressbar" 
-                             th:style="'width: ' + ${compliance.compliancePercentage} + '%'" 
+                        <progress class="progress-bar" max="100"
+                             th:value="${compliance.compliancePercentage}"
                              th:classappend="${compliance.compliancePercentage >= 100} ? 'bg-success' : (${compliance.compliancePercentage >= 50} ? 'bg-warning' : 'bg-danger')"
-                             th:attr="aria-valuenow=${compliance.compliancePercentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                             th:text="${compliance.compliancePercentage} + '%'"></progress>
                     </div>
 
                     <div class="row text-center">
                         <div class="col-4">
-                            <h4 th:text="${compliance.requiredOfficeDays}"></h4>
+                            <h4 th:text="${compliance.requiredOfficeDays}">0</h4>
                             <small class="text-muted">Required</small>
                         </div>
                         <div class="col-4 border-start border-end">
-                            <h4 th:text="${compliance.actualOfficeDaysVisited}" class="text-primary"></h4>
+                            <h4 th:text="${compliance.actualOfficeDaysVisited}" class="text-primary">0</h4>
                             <small class="text-muted">Visited</small>
                         </div>
                         <div class="col-4">
-                            <h4 th:text="${compliance.remainingOfficeDays}" class="text-danger"></h4>
+                            <h4 th:text="${compliance.remainingOfficeDays}" class="text-danger">0</h4>
                             <small class="text-muted">Remaining</small>
                         </div>
                     </div>

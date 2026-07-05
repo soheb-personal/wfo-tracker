@@ -22,24 +22,27 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChangePasswordController {
 
+    private static final String TEMPLATE_CHANGE_PASSWORD = "change-password";
+    private static final String ATTR_CHANGE_PASSWORD_REQUEST = "changePasswordRequest";
+
     private final AuthService authService;
 
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
-        model.addAttribute("changePasswordRequest", new ChangePasswordRequest("", ""));
-        return "change-password";
+        model.addAttribute(ATTR_CHANGE_PASSWORD_REQUEST, new ChangePasswordRequest("", ""));
+        return TEMPLATE_CHANGE_PASSWORD;
     }
 
     @PostMapping("/change-password")
     public String changePassword(
-            @Valid @ModelAttribute("changePasswordRequest") ChangePasswordRequest request,
+            @Valid @ModelAttribute(ATTR_CHANGE_PASSWORD_REQUEST) ChangePasswordRequest request,
             BindingResult bindingResult,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletRequest httpRequest,
             Model model) {
 
         if (bindingResult.hasErrors()) {
-            return "change-password";
+            return TEMPLATE_CHANGE_PASSWORD;
         }
 
         try {
@@ -47,7 +50,7 @@ public class ChangePasswordController {
             httpRequest.logout();
         } catch (IllegalArgumentException | ServletException e) {
             model.addAttribute("error", e.getMessage());
-            return "change-password";
+            return TEMPLATE_CHANGE_PASSWORD;
         }
 
         return "redirect:/login?passwordChanged";

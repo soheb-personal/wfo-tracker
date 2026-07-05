@@ -14,25 +14,29 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private static final String TEMPLATE_ERROR_400 = "error/400";
+    private static final String TEMPLATE_ERROR_500 = "error/500";
+    private static final String ATTR_ERROR = "error";
+
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public String handleNoResourceFoundException(NoResourceFoundException e, Model model) {
         log.debug("Static resource not found: {}", e.getResourcePath());
-        model.addAttribute("error", "The requested static asset could not be found.");
-        return "error/400";
+        model.addAttribute(ATTR_ERROR, "The requested static asset could not be found.");
+        return TEMPLATE_ERROR_400;
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public String handleIllegalArgumentException(IllegalArgumentException e, Model model) {
         log.warn("Illegal argument exception: {}", e.getMessage());
-        model.addAttribute("error", e.getMessage());
-        return "error/400";
+        model.addAttribute(ATTR_ERROR, e.getMessage());
+        return TEMPLATE_ERROR_400;
     }
 
     @ExceptionHandler(Exception.class)
     public String handleGeneralException(Exception e, Model model) {
         log.error("Unexpected error occurred", e);
-        model.addAttribute("error", "An unexpected error occurred. Please contact support.");
-        return "error/500";
+        model.addAttribute(ATTR_ERROR, "An unexpected error occurred. Please contact support.");
+        return TEMPLATE_ERROR_500;
     }
 }

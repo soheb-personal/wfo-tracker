@@ -2,7 +2,6 @@ package com.wfotracker.manager.controller;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 
@@ -34,6 +33,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ManagerController {
 
+    private static final String REDIRECT_MANAGER_DASHBOARD = "redirect:/manager/dashboard";
+    private static final String TEMPLATE_EMPLOYEE_FORM = "employee-form";
+    private static final String TEMPLATE_EMPLOYEE_EDIT = "employee-edit";
+    private static final String TEMPLATE_EMPLOYEE_CONFIG = "employee-config";
+    private static final String ATTR_EMPLOYEE_ID = "employeeId";
+    private static final String ATTR_SUCCESS = "success";
+    private static final String ATTR_ERROR = "error";
+    private static final String ATTR_ADD_EMPLOYEE_REQUEST = "addEmployeeRequest";
+    private static final String ATTR_EDIT_EMPLOYEE_REQUEST = "editEmployeeRequest";
+    private static final String ATTR_MONTHLY_CONFIG_REQUEST = "monthlyConfigRequest";
+
     private final ManagerService managerService;
     private final ComplianceService complianceService;
 
@@ -49,7 +59,7 @@ public class ManagerController {
         List<User> employees = managerService.getEmployeesForManager(userDetails.getId());
         List<EmployeeComplianceDto> complianceList = employees.stream()
                 .map(emp -> complianceService.getComplianceForEmployee(emp, m, y))
-                .collect(Collectors.toList());
+                .toList();
 
         model.addAttribute("employeesCompliance", complianceList);
         model.addAttribute("currentMonth", m);
@@ -59,28 +69,28 @@ public class ManagerController {
 
     @GetMapping("/employee/add")
     public String showAddEmployeeForm(Model model) {
-        model.addAttribute("addEmployeeRequest", new AddEmployeeRequest(""));
-        return "employee-form";
+        model.addAttribute(ATTR_ADD_EMPLOYEE_REQUEST, new AddEmployeeRequest(""));
+        return TEMPLATE_EMPLOYEE_FORM;
     }
 
     @PostMapping("/employee/add")
     public String addEmployee(
-            @Valid @ModelAttribute("addEmployeeRequest") AddEmployeeRequest request,
+            @Valid @ModelAttribute(ATTR_ADD_EMPLOYEE_REQUEST) AddEmployeeRequest request,
             BindingResult bindingResult,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             RedirectAttributes redirectAttributes,
             Model model) {
         if (bindingResult.hasErrors()) {
-            return "employee-form";
+            return TEMPLATE_EMPLOYEE_FORM;
         }
 
         try {
             managerService.addEmployee(userDetails.getId(), request);
-            redirectAttributes.addFlashAttribute("success", "Employee added successfully.");
-            return "redirect:/manager/dashboard";
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Employee added successfully.");
+            return REDIRECT_MANAGER_DASHBOARD;
         } catch (IllegalArgumentException e) {
-            model.addAttribute("error", e.getMessage());
-            return "employee-form";
+            model.addAttribute(ATTR_ERROR, e.getMessage());
+            return TEMPLATE_EMPLOYEE_FORM;
         }
     }
 
@@ -93,32 +103,32 @@ public class ManagerController {
     @GetMapping("/employee/edit/{id}")
     public String showEditEmployeeForm(
             @PathVariable Long id, @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
-        model.addAttribute("editEmployeeRequest", managerService.getEmployeeForEdit(userDetails.getId(), id));
-        model.addAttribute("employeeId", id);
-        return "employee-edit";
+        model.addAttribute(ATTR_EDIT_EMPLOYEE_REQUEST, managerService.getEmployeeForEdit(userDetails.getId(), id));
+        model.addAttribute(ATTR_EMPLOYEE_ID, id);
+        return TEMPLATE_EMPLOYEE_EDIT;
     }
 
     @PostMapping("/employee/edit/{id}")
     public String editEmployee(
             @PathVariable Long id,
-            @Valid @ModelAttribute("editEmployeeRequest") EditEmployeeRequest request,
+            @Valid @ModelAttribute(ATTR_EDIT_EMPLOYEE_REQUEST) EditEmployeeRequest request,
             BindingResult bindingResult,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             RedirectAttributes redirectAttributes,
             Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("employeeId", id);
-            return "employee-edit";
+            model.addAttribute(ATTR_EMPLOYEE_ID, id);
+            return TEMPLATE_EMPLOYEE_EDIT;
         }
 
         try {
             managerService.editEmployee(userDetails.getId(), id, request);
-            redirectAttributes.addFlashAttribute("success", "Employee updated successfully.");
-            return "redirect:/manager/dashboard";
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Employee updated successfully.");
+            return REDIRECT_MANAGER_DASHBOARD;
         } catch (IllegalArgumentException e) {
-            model.addAttribute("error", e.getMessage());
-            model.addAttribute("employeeId", id);
-            return "employee-edit";
+            model.addAttribute(ATTR_ERROR, e.getMessage());
+            model.addAttribute(ATTR_EMPLOYEE_ID, id);
+            return TEMPLATE_EMPLOYEE_EDIT;
         }
     }
 
@@ -129,11 +139,11 @@ public class ManagerController {
             RedirectAttributes redirectAttributes) {
         try {
             managerService.deactivateEmployee(userDetails.getId(), id);
-            redirectAttributes.addFlashAttribute("success", "Employee deactivated successfully.");
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Employee deactivated successfully.");
         } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute(ATTR_ERROR, e.getMessage());
         }
-        return "redirect:/manager/dashboard";
+        return REDIRECT_MANAGER_DASHBOARD;
     }
 
     @PostMapping("/employee/reset-password/{id}")
@@ -143,11 +153,11 @@ public class ManagerController {
             RedirectAttributes redirectAttributes) {
         try {
             managerService.resetEmployeePassword(userDetails.getId(), id);
-            redirectAttributes.addFlashAttribute("success", "Employee password reset successfully.");
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Employee password reset successfully.");
         } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute(ATTR_ERROR, e.getMessage());
         }
-        return "redirect:/manager/dashboard";
+        return REDIRECT_MANAGER_DASHBOARD;
     }
 
     @GetMapping("/employee/configure/{id}")
@@ -169,32 +179,32 @@ public class ManagerController {
                 config.getManualCheckins(),
                 m,
                 y);
-        model.addAttribute("monthlyConfigRequest", request);
-        model.addAttribute("employeeId", id);
-        return "employee-config";
+        model.addAttribute(ATTR_MONTHLY_CONFIG_REQUEST, request);
+        model.addAttribute(ATTR_EMPLOYEE_ID, id);
+        return TEMPLATE_EMPLOYEE_CONFIG;
     }
 
     @PostMapping("/employee/configure/{id}")
     public String configureEmployee(
             @PathVariable Long id,
-            @Valid @ModelAttribute("monthlyConfigRequest") MonthlyConfigRequest request,
+            @Valid @ModelAttribute(ATTR_MONTHLY_CONFIG_REQUEST) MonthlyConfigRequest request,
             BindingResult bindingResult,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             RedirectAttributes redirectAttributes,
             Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("employeeId", id);
-            return "employee-config";
+            model.addAttribute(ATTR_EMPLOYEE_ID, id);
+            return TEMPLATE_EMPLOYEE_CONFIG;
         }
 
         try {
             managerService.configureMonthly(userDetails.getId(), id, request);
-            redirectAttributes.addFlashAttribute("success", "Monthly configuration updated.");
-            return "redirect:/manager/dashboard";
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Monthly configuration updated.");
+            return REDIRECT_MANAGER_DASHBOARD;
         } catch (IllegalArgumentException e) {
-            model.addAttribute("error", e.getMessage());
-            model.addAttribute("employeeId", id);
-            return "employee-config";
+            model.addAttribute(ATTR_ERROR, e.getMessage());
+            model.addAttribute(ATTR_EMPLOYEE_ID, id);
+            return TEMPLATE_EMPLOYEE_CONFIG;
         }
     }
 }

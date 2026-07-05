@@ -89,12 +89,8 @@ admin
 
 Password
 
-Generate random complex 10-character password.
-
-Example:
-
 ```text
-A9#Lm2@Qx7
+admin@123
 ```
 
 Store in DB.
@@ -105,7 +101,7 @@ Role
 ADMIN
 ```
 
-Admin password does NOT require change on first login.
+Admin password MUST change on first login.
 
 ---
 

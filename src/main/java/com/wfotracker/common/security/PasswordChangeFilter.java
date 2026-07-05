@@ -12,8 +12,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.wfotracker.common.constants.Role;
-
 @Component
 public class PasswordChangeFilter extends OncePerRequestFilter {
 
@@ -35,17 +33,12 @@ public class PasswordChangeFilter extends OncePerRequestFilter {
 
         if (authentication != null
                 && authentication.isAuthenticated()
-                && authentication.getPrincipal() instanceof CustomUserDetails) {
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ROLE_" + Role.ADMIN.name()));
-
-            if (!isAdmin && !userDetails.isPasswordChanged()) {
-                if (!uri.equals("/change-password") && !uri.equals("/logout")) {
-                    response.sendRedirect("/change-password");
-                    return;
-                }
-            }
+                && authentication.getPrincipal() instanceof CustomUserDetails userDetails
+                && !userDetails.isPasswordChanged()
+                && !uri.equals("/change-password")
+                && !uri.equals("/logout")) {
+            response.sendRedirect("/change-password");
+            return;
         }
 
         filterChain.doFilter(request, response);
