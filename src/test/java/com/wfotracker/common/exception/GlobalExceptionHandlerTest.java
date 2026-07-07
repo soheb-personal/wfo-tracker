@@ -34,6 +34,11 @@ class GlobalExceptionHandlerTest {
         public void testException() throws Exception {
             throw new Exception("General unexpected error");
         }
+
+        @GetMapping("/test-access-denied")
+        public void testAccessDenied() {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied test");
+        }
     }
 
     @BeforeEach
@@ -57,5 +62,16 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("error/500"))
                 .andExpect(model().attribute("error", "An unexpected error occurred. Please contact support."));
+    }
+
+    @Test
+    void handleAccessDeniedExceptionTest() throws Exception {
+        try {
+            mockMvc.perform(get("/test-access-denied"));
+            org.junit.jupiter.api.Assertions.fail("Should have thrown AccessDeniedException");
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    e.getCause() instanceof org.springframework.security.access.AccessDeniedException);
+        }
     }
 }

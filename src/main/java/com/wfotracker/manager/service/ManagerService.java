@@ -3,6 +3,7 @@ package com.wfotracker.manager.service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class ManagerService {
     private final RoleRepository roleRepository;
     private final TeamManagerRepository teamManagerRepository;
     private final EmployeeMembershipRepository employeeMembershipRepository;
+    private final org.springframework.security.core.session.SessionRegistry sessionRegistry;
 
     @Transactional(readOnly = true)
     public List<User> getEmployeesForManager(Long managerId) {
@@ -51,30 +53,47 @@ public class ManagerService {
                 .orElseThrow(() -> new IllegalArgumentException("Manager is not currently assigned to any team"));
         Team team = teamManager.getTeam();
 
-        User employee = new User();
-        employee.setFullName(request.employeeName());
-
-        String[] nameParts = request.employeeName().trim().split("\\s+");
-        String firstName = nameParts[0].toLowerCase();
-        String username = getUniqueUsername(firstName);
-        employee.setUsername(username);
-
-        String surnameInitial = nameParts.length > 1
-                ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
-                : "";
-        String defaultPassword = firstName + surnameInitial + "@123";
-
-        employee.setPassword(passwordEncoder.encode(defaultPassword));
-
         com.wfotracker.domain.entity.Role employeeRole = roleRepository
                 .findByName("ROLE_EMPLOYEE")
                 .orElseThrow(() -> new IllegalStateException("ROLE_EMPLOYEE role not found"));
-        employee.getRoles().add(employeeRole);
 
-        employee = userRepository.save(employee);
+        User employeeUser;
+        Optional<User> existingUserOpt = userRepository.findByUsername(request.employeeDasId());
+
+        if (existingUserOpt.isPresent()) {
+            employeeUser = existingUserOpt.get();
+            // Validate that the employee is not already active in another team
+            if (employeeMembershipRepository
+                    .findByEmployeeIdAndActiveTrue(employeeUser.getId())
+                    .isPresent()) {
+                throw new IllegalArgumentException("Employee is already active in another team");
+            }
+            // Add ROLE_EMPLOYEE role if they don't have it
+            if (!employeeUser.getRoles().contains(employeeRole)) {
+                employeeUser.getRoles().add(employeeRole);
+            }
+            // Update full name to the latest input
+            employeeUser.setFullName(request.employeeName());
+            employeeUser = userRepository.save(employeeUser);
+        } else {
+            employeeUser = new User();
+            employeeUser.setFullName(request.employeeName());
+            employeeUser.setUsername(request.employeeDasId());
+
+            String[] nameParts = request.employeeName().trim().split("\\s+");
+            String firstName = nameParts[0].toLowerCase();
+            String surnameInitial = nameParts.length > 1
+                    ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
+                    : "";
+            String defaultPassword = firstName + surnameInitial + "@123";
+
+            employeeUser.setPassword(passwordEncoder.encode(defaultPassword));
+            employeeUser.getRoles().add(employeeRole);
+            employeeUser = userRepository.save(employeeUser);
+        }
 
         EmployeeMembership membership = new EmployeeMembership();
-        membership.setEmployee(employee);
+        membership.setEmployee(employeeUser);
         membership.setTeam(team);
         membership.setManager(manager);
         membership.setActive(true);
@@ -95,7 +114,7 @@ public class ManagerService {
 
         if (!employee.getUsername().equals(request.username())) {
             if (userRepository.existsByUsername(request.username())) {
-                throw new IllegalArgumentException("Username already exists");
+                throw new IllegalArgumentException("Employee DAS ID already exists");
             }
             employee.setUsername(request.username());
         }
@@ -107,6 +126,21 @@ public class ManagerService {
         employee.setActive(false);
 
         employeeMembershipRepository.findByEmployeeIdAndActiveTrue(employeeId).ifPresent(m -> m.setActive(false));
+        expireUserSessions(employeeId);
+    }
+
+    private void expireUserSessions(Long userId) {
+        List<Object> principals = sessionRegistry.getAllPrincipals();
+        for (Object principal : principals) {
+            if (principal instanceof com.wfotracker.common.security.CustomUserDetails userDetails
+                    && userDetails.getId().equals(userId)) {
+                List<org.springframework.security.core.session.SessionInformation> sessions =
+                        sessionRegistry.getAllSessions(principal, false);
+                for (org.springframework.security.core.session.SessionInformation session : sessions) {
+                    session.expireNow();
+                }
+            }
+        }
     }
 
     @Transactional
@@ -180,16 +214,6 @@ public class ManagerService {
         }
 
         return employee;
-    }
-
-    private String getUniqueUsername(String baseUsername) {
-        String username = baseUsername;
-        int counter = 1;
-        while (userRepository.existsByUsername(username)) {
-            username = baseUsername + counter;
-            counter++;
-        }
-        return username;
     }
 
     private int calculateWorkingDays(int year, int month) {

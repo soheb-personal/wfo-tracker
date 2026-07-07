@@ -20,6 +20,7 @@ import com.wfotracker.domain.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -92,10 +93,6 @@ class EmployeeServiceTest {
         assertNotNull(attendance.getCheckOut());
         assertTrue(attendance.getHoursSpent().compareTo(BigDecimal.ZERO) > 0);
         verify(attendanceRepository).save(attendance);
-    }
-
-    private void assertNotNull(Object obj) {
-        assertTrue(obj != null);
     }
 
     @Test

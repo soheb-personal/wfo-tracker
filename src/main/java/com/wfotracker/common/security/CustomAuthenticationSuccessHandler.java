@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -19,21 +18,16 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             HttpServletRequest request, HttpServletResponse response, Authentication authentication)
             throws IOException, ServletException {
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
-        if (userDetails == null || !userDetails.isPasswordChanged()) {
-            response.sendRedirect("/change-password");
-            return;
-        }
-
-        for (GrantedAuthority auth : authentication.getAuthorities()) {
-            if ("ROLE_ADMIN".equals(auth.getAuthority())) {
+        String selectedRole = request.getParameter("role");
+        if (selectedRole != null && !selectedRole.trim().isEmpty()) {
+            String roleStr = selectedRole.trim().toUpperCase();
+            if ("ROLE_ADMIN".equals(roleStr)) {
                 response.sendRedirect("/admin/dashboard");
                 return;
-            } else if ("ROLE_MANAGER".equals(auth.getAuthority())) {
+            } else if ("ROLE_MANAGER".equals(roleStr)) {
                 response.sendRedirect("/manager/dashboard");
                 return;
-            } else if ("ROLE_EMPLOYEE".equals(auth.getAuthority())) {
+            } else if ("ROLE_EMPLOYEE".equals(roleStr)) {
                 response.sendRedirect("/employee/dashboard");
                 return;
             }

@@ -64,4 +64,20 @@ public class CustomUserDetails implements UserDetails {
     public boolean isEnabled() {
         return user.isActive();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof CustomUserDetails that)) {
+            return false;
+        }
+        return this.getId() != null && this.getId().equals(that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getId() != null ? this.getId().hashCode() : 0;
+    }
 }

@@ -1,6 +1,7 @@
 package com.wfotracker.admin.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,17 +25,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminService {
 
-    private static final String MSG_TEAM_NAME_EXISTS = "Team name already exists";
     private static final String MSG_TEAM_NOT_FOUND = "Team not found";
-    private static final String ROLE_MANAGER_NAME = "ROLE_MANAGER";
-    private static final String REGEX_WHITESPACE = "\\s+";
-    private static final String DEFAULT_PASS_SUFFIX = "@123";
 
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final TeamManagerRepository teamManagerRepository;
+    private final org.springframework.security.core.session.SessionRegistry sessionRegistry;
 
     @Transactional(readOnly = true)
     public List<TeamDto> getAllTeams() {
@@ -44,37 +42,52 @@ public class AdminService {
     @Transactional
     public void createTeam(CreateTeamRequest request) {
         if (teamRepository.existsByTeamName(request.teamName())) {
-            throw new IllegalArgumentException(MSG_TEAM_NAME_EXISTS);
+            throw new IllegalArgumentException("Team name already exists");
         }
+
+        com.wfotracker.domain.entity.Role managerRole = roleRepository
+                .findByName("ROLE_MANAGER")
+                .orElseThrow(() -> new IllegalStateException("ROLE_MANAGER role not found"));
 
         Team team = new Team();
         team.setTeamName(request.teamName());
         team = teamRepository.save(team);
 
-        User manager = new User();
-        manager.setFullName(request.managerName());
+        User managerUser;
+        Optional<User> existingUserOpt = userRepository.findByUsername(request.managerDasId());
 
-        String[] nameParts = request.managerName().trim().split(REGEX_WHITESPACE);
-        String firstName = nameParts[0].toLowerCase();
-        String username = getUniqueUsername(firstName);
-        manager.setUsername(username);
+        if (existingUserOpt.isPresent()) {
+            managerUser = existingUserOpt.get();
+            // Validate that the manager is not already actively managing another team
+            if (teamManagerRepository.existsByManagerIdAndActiveTrue(managerUser.getId())) {
+                throw new IllegalArgumentException("This user is already an active manager of another team");
+            }
+            // Add ROLE_MANAGER role if they don't have it
+            if (!managerUser.getRoles().contains(managerRole)) {
+                managerUser.getRoles().add(managerRole);
+            }
+            // Update full name to the latest input
+            managerUser.setFullName(request.managerName());
+            managerUser = userRepository.save(managerUser);
+        } else {
+            managerUser = new User();
+            managerUser.setFullName(request.managerName());
+            managerUser.setUsername(request.managerDasId());
 
-        String surnameInitial = nameParts.length > 1
-                ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
-                : "";
-        String defaultPassword = firstName + surnameInitial + DEFAULT_PASS_SUFFIX;
-        manager.setPassword(passwordEncoder.encode(defaultPassword));
-
-        com.wfotracker.domain.entity.Role managerRole = roleRepository
-                .findByName(ROLE_MANAGER_NAME)
-                .orElseThrow(() -> new IllegalStateException(ROLE_MANAGER_NAME + " role not found"));
-        manager.getRoles().add(managerRole);
-
-        manager = userRepository.save(manager);
+            String[] nameParts = request.managerName().trim().split("\\s+");
+            String firstName = nameParts[0].toLowerCase();
+            String surnameInitial = nameParts.length > 1
+                    ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
+                    : "";
+            String defaultPassword = firstName + surnameInitial + "@123";
+            managerUser.setPassword(passwordEncoder.encode(defaultPassword));
+            managerUser.getRoles().add(managerRole);
+            managerUser = userRepository.save(managerUser);
+        }
 
         TeamManager teamManager = new TeamManager();
         teamManager.setTeam(team);
-        teamManager.setManager(manager);
+        teamManager.setManager(managerUser);
         teamManagerRepository.save(teamManager);
     }
 
@@ -94,7 +107,7 @@ public class AdminService {
         Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException(MSG_TEAM_NOT_FOUND));
 
         if (!team.getTeamName().equals(request.teamName()) && teamRepository.existsByTeamName(request.teamName())) {
-            throw new IllegalArgumentException(MSG_TEAM_NAME_EXISTS);
+            throw new IllegalArgumentException("Team name already exists");
         }
 
         team.setTeamName(request.teamName());
@@ -105,7 +118,7 @@ public class AdminService {
 
             if (!manager.getUsername().equals(request.managerUsername())) {
                 if (userRepository.existsByUsername(request.managerUsername())) {
-                    throw new IllegalArgumentException("Username already exists");
+                    throw new IllegalArgumentException("Manager DAS ID already exists");
                 }
                 manager.setUsername(request.managerUsername());
             }
@@ -118,9 +131,35 @@ public class AdminService {
 
         team.setActive(false);
 
+        // Deactivate manager and expire their sessions
+        User manager = getManagerForTeam(teamId);
+        if (manager != null) {
+            manager.setActive(false);
+            expireUserSessions(manager.getId());
+        }
+
+        // Deactivate the team-manager mapping
+        teamManagerRepository.findByTeamIdAndActiveTrue(teamId).ifPresent(tm -> tm.setActive(false));
+
+        // Deactivate employees and expire their sessions
         List<User> teamMembers = userRepository.findByTeamId(teamId);
         for (User user : teamMembers) {
             user.setActive(false);
+            expireUserSessions(user.getId());
+        }
+    }
+
+    private void expireUserSessions(Long userId) {
+        List<Object> principals = sessionRegistry.getAllPrincipals();
+        for (Object principal : principals) {
+            if (principal instanceof com.wfotracker.common.security.CustomUserDetails userDetails
+                    && userDetails.getId().equals(userId)) {
+                List<org.springframework.security.core.session.SessionInformation> sessions =
+                        sessionRegistry.getAllSessions(principal, false);
+                for (org.springframework.security.core.session.SessionInformation session : sessions) {
+                    session.expireNow();
+                }
+            }
         }
     }
 
@@ -130,17 +169,17 @@ public class AdminService {
                 userRepository.findById(managerId).orElseThrow(() -> new IllegalArgumentException("Manager not found"));
 
         boolean isManager =
-                manager.getRoles().stream().anyMatch(r -> r.getName().equals(ROLE_MANAGER_NAME));
+                manager.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_MANAGER"));
         if (!isManager) {
             throw new IllegalArgumentException("User is not a manager");
         }
 
-        String[] nameParts = manager.getFullName().trim().split(REGEX_WHITESPACE);
+        String[] nameParts = manager.getFullName().trim().split("\\s+");
         String firstName = nameParts[0].toLowerCase();
         String surnameInitial = nameParts.length > 1
                 ? nameParts[nameParts.length - 1].substring(0, 1).toLowerCase()
                 : "";
-        String defaultPassword = firstName + surnameInitial + DEFAULT_PASS_SUFFIX;
+        String defaultPassword = firstName + surnameInitial + "@123";
 
         manager.setPassword(passwordEncoder.encode(defaultPassword));
         manager.setPasswordChanged(false);
@@ -156,15 +195,5 @@ public class AdminService {
         return userRepository.findByTeamIdAndRole(teamId, Role.MANAGER).stream()
                 .findFirst()
                 .orElse(null);
-    }
-
-    private String getUniqueUsername(String baseUsername) {
-        String username = baseUsername;
-        int counter = 1;
-        while (userRepository.existsByUsername(username)) {
-            username = baseUsername + counter;
-            counter++;
-        }
-        return username;
     }
 }

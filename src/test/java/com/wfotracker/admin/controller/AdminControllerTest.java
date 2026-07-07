@@ -82,7 +82,10 @@ class AdminControllerTest {
                 .when(adminService)
                 .createTeam(any(CreateTeamRequest.class));
 
-        mockMvc.perform(post("/admin/team/create").param("teamName", "Team A").param("managerName", "Rahul Sharma"))
+        mockMvc.perform(post("/admin/team/create")
+                        .param("teamName", "Team A")
+                        .param("managerName", "Rahul Sharma")
+                        .param("managerDasId", "rahul"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("team-form"))
                 .andExpect(model().attribute("error", "Team name already exists"));
@@ -90,7 +93,10 @@ class AdminControllerTest {
 
     @Test
     void testCreateTeam_Success() throws Exception {
-        mockMvc.perform(post("/admin/team/create").param("teamName", "Team A").param("managerName", "Rahul Sharma"))
+        mockMvc.perform(post("/admin/team/create")
+                        .param("teamName", "Team A")
+                        .param("managerName", "Rahul Sharma")
+                        .param("managerDasId", "rahul"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/dashboard"))
                 .andExpect(flash().attribute("success", "Team and Manager created successfully."));

@@ -43,7 +43,7 @@ public class AdminController {
 
     @GetMapping("/team/create")
     public String showCreateTeamForm(Model model) {
-        model.addAttribute(ATTR_CREATE_TEAM_REQUEST, new CreateTeamRequest("", ""));
+        model.addAttribute(ATTR_CREATE_TEAM_REQUEST, new CreateTeamRequest("", "", ""));
         return TEMPLATE_TEAM_FORM;
     }
 

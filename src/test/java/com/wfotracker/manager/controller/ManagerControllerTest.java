@@ -109,7 +109,9 @@ class ManagerControllerTest {
 
     @Test
     void testAddEmployee_Success() throws Exception {
-        mockMvc.perform(post("/manager/employee/add").param("employeeName", "Jane Employee"))
+        mockMvc.perform(post("/manager/employee/add")
+                        .param("employeeName", "Jane Employee")
+                        .param("employeeDasId", "jane"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/manager/dashboard"))
                 .andExpect(flash().attribute("success", "Employee added successfully."));

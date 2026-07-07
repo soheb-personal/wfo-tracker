@@ -69,7 +69,7 @@ public class ManagerController {
 
     @GetMapping("/employee/add")
     public String showAddEmployeeForm(Model model) {
-        model.addAttribute(ATTR_ADD_EMPLOYEE_REQUEST, new AddEmployeeRequest(""));
+        model.addAttribute(ATTR_ADD_EMPLOYEE_REQUEST, new AddEmployeeRequest("", ""));
         return TEMPLATE_EMPLOYEE_FORM;
     }
 

@@ -29,6 +29,12 @@
                             <div class="text-danger" th:if="${#fields.hasErrors('managerName')}" th:errors="*{managerName}"></div>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="managerDasId" class="form-label">Manager DAS ID</label>
+                            <input type="text" class="form-control" id="managerDasId" th:field="*{managerDasId}" required maxlength="10">
+                            <div class="text-danger" th:if="${#fields.hasErrors('managerDasId')}" th:errors="*{managerDasId}"></div>
+                        </div>
+
                         <div class="d-flex justify-content-between">
                             <a th:href="@{/admin/dashboard}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">Create Team</button>

@@ -24,8 +24,8 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" th:field="*{username}" required>
+                            <label for="username" class="form-label">Employee DAS ID</label>
+                            <input type="text" class="form-control" id="username" th:field="*{username}" required maxlength="10">
                             <div class="text-danger" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
                         </div>
 

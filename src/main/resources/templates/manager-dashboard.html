@@ -57,11 +57,15 @@
                     </td>
                     <td th:text="${emp.remainingOfficeDays}"></td>
                     <td>
-                        <div class="progress">
-                            <progress class="progress-bar" max="100"
-                                 th:value="${emp.compliancePercentage}"
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar"
+                                 th:style="'width: ' + ${emp.compliancePercentage} + '%;'"
+                                 th:attr="aria-valuenow=${emp.compliancePercentage}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
                                  th:classappend="${emp.compliancePercentage >= 100} ? 'bg-success' : (${emp.compliancePercentage >= 50} ? 'bg-warning' : 'bg-danger')"
-                                 th:text="${emp.compliancePercentage} + '%'"></progress>
+                                 th:text="${emp.compliancePercentage} + '%'">
+                            </div>
                         </div>
                     </td>
                     <td>

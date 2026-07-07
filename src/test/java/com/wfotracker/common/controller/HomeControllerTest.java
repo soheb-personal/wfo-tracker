@@ -21,6 +21,7 @@ import com.wfotracker.domain.entity.User;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @ExtendWith(MockitoExtension.class)
 class HomeControllerTest {
@@ -104,5 +105,11 @@ class HomeControllerTest {
         mockMvc.perform(get("/"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/employee/dashboard"));
+    }
+
+    @Test
+    void testAccessDenied() throws Exception {
+        buildMockMvc();
+        mockMvc.perform(get("/error/403")).andExpect(status().isOk()).andExpect(view().name("error/403"));
     }
 }

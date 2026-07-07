@@ -30,8 +30,8 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="managerUsername" class="form-label">Manager Username</label>
-                            <input type="text" class="form-control" id="managerUsername" th:field="*{managerUsername}" required>
+                            <label for="managerUsername" class="form-label">Manager DAS ID</label>
+                            <input type="text" class="form-control" id="managerUsername" th:field="*{managerUsername}" required maxlength="10">
                             <div class="text-danger" th:if="${#fields.hasErrors('managerUsername')}" th:errors="*{managerUsername}"></div>
                         </div>
 

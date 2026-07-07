@@ -33,6 +33,11 @@ public class GlobalExceptionHandler {
         return TEMPLATE_ERROR_400;
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public void handleAccessDeniedException(org.springframework.security.access.AccessDeniedException e) {
+        throw e;
+    }
+
     @ExceptionHandler(Exception.class)
     public String handleGeneralException(Exception e, Model model) {
         log.error("Unexpected error occurred", e);

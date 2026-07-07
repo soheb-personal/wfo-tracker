@@ -66,11 +66,15 @@
                         <p class="text-muted mb-0">Compliance</p>
                     </div>
                     
-                    <div class="progress mb-4">
-                        <progress class="progress-bar" max="100"
-                             th:value="${compliance.compliancePercentage}"
+                    <div class="progress mb-4" style="height: 20px;">
+                        <div class="progress-bar" role="progressbar"
+                             th:style="'width: ' + ${compliance.compliancePercentage} + '%;'"
+                             th:attr="aria-valuenow=${compliance.compliancePercentage}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
                              th:classappend="${compliance.compliancePercentage >= 100} ? 'bg-success' : (${compliance.compliancePercentage >= 50} ? 'bg-warning' : 'bg-danger')"
-                             th:text="${compliance.compliancePercentage} + '%'"></progress>
+                             th:text="${compliance.compliancePercentage} + '%'">
+                        </div>
                     </div>
 
                     <div class="row text-center">

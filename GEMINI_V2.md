@@ -36,7 +36,7 @@
 ## Authentication
 Login fields:
 - Role Dropdown (mandatory)
-- DAS ID
+- Username (For admin, it is admin & for manager/employee role, it is DAS ID)
 - Password
 
 Role determines dashboard access.
@@ -55,7 +55,8 @@ firstname + surnameInitial + @123
 ## Admin Module
 Admin can:
 - Create Team
-- Create/Edit Manager
+- Create/Edit Manager by providing DAS ID & Full name
+- DAS ID: mandatory, alphanumeric only, length <= 10
 - Reset Manager password
 - Deactivate Team
 - Export all teams data (CSV/XLSX)
@@ -76,7 +77,8 @@ Manager Rules:
 
 ## Manager Module
 Manager can:
-- Add/Edit Employees
+- Add/Edit Employees by providing DAS ID & Full name
+- DAS ID: mandatory, alphanumeric only, length <= 10
 - Create Groups
 - Configure monthly employee config
 - Manual Attendance Entry
@@ -159,6 +161,7 @@ Admin:
 - Expand to show employees
 
 Manager:
+- DAS ID
 - Employee Name
 - Required Days
 - Visited Days
