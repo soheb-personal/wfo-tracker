@@ -9,11 +9,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.wfotracker.common.constants.Role;
-import com.wfotracker.common.security.CustomUserDetails;
 import com.wfotracker.domain.entity.EmployeeMembership;
 import com.wfotracker.domain.entity.MonthlyConfiguration;
 import com.wfotracker.domain.entity.Team;
@@ -33,8 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,9 +54,6 @@ class ManagerServiceTest {
 
     @Mock
     private EmployeeMembershipRepository employeeMembershipRepository;
-
-    @Mock
-    private org.springframework.security.core.session.SessionRegistry sessionRegistry;
 
     @InjectMocks
     private ManagerService managerService;
@@ -212,20 +205,9 @@ class ManagerServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(employee));
         when(employeeMembershipRepository.findByEmployeeIdAndActiveTrue(2L)).thenReturn(Optional.of(membership));
 
-        // Setup session deactivation mocks
-        CustomUserDetails mockDetails = mock(CustomUserDetails.class);
-        when(mockDetails.getId()).thenReturn(employee.getId()); // employee id is 2L
-
-        List<Object> mockPrincipals = List.of(mockDetails);
-        when(sessionRegistry.getAllPrincipals()).thenReturn(mockPrincipals);
-
-        SessionInformation mockSession = mock(SessionInformation.class);
-        when(sessionRegistry.getAllSessions(mockDetails, false)).thenReturn(List.of(mockSession));
-
         managerService.deactivateEmployee(1L, 2L);
         assertFalse(employee.isActive());
         assertFalse(membership.isActive());
-        verify(mockSession, times(1)).expireNow();
     }
 
     @Test

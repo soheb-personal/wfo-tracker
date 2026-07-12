@@ -11,9 +11,11 @@ import com.wfotracker.admin.dto.CreateTeamRequest;
 import com.wfotracker.admin.dto.EditTeamRequest;
 import com.wfotracker.admin.dto.TeamDto;
 import com.wfotracker.common.constants.Role;
+import com.wfotracker.domain.entity.EmployeeMembership;
 import com.wfotracker.domain.entity.Team;
 import com.wfotracker.domain.entity.TeamManager;
 import com.wfotracker.domain.entity.User;
+import com.wfotracker.domain.repository.EmployeeMembershipRepository;
 import com.wfotracker.domain.repository.RoleRepository;
 import com.wfotracker.domain.repository.TeamManagerRepository;
 import com.wfotracker.domain.repository.TeamRepository;
@@ -26,13 +28,18 @@ import lombok.RequiredArgsConstructor;
 public class AdminService {
 
     private static final String MSG_TEAM_NOT_FOUND = "Team not found";
+    private static final String MSG_MANAGER_NOT_FOUND = "Manager not found";
+    private static final String MSG_ROLE_NOT_FOUND = "ROLE_MANAGER role not found";
+    private static final String MSG_TEAM_NAME_EXISTS = "Team name already exists";
+    private static final String MSG_MANAGER_DAS_EXISTS = "Manager DAS ID already exists";
+    private static final String ROLE_MANAGER_NAME = "ROLE_MANAGER";
 
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final TeamManagerRepository teamManagerRepository;
-    private final org.springframework.security.core.session.SessionRegistry sessionRegistry;
+    private final EmployeeMembershipRepository employeeMembershipRepository;
 
     @Transactional(readOnly = true)
     public List<TeamDto> getAllTeams() {
@@ -42,12 +49,12 @@ public class AdminService {
     @Transactional
     public void createTeam(CreateTeamRequest request) {
         if (teamRepository.existsByTeamName(request.teamName())) {
-            throw new IllegalArgumentException("Team name already exists");
+            throw new IllegalArgumentException(MSG_TEAM_NAME_EXISTS);
         }
 
         com.wfotracker.domain.entity.Role managerRole = roleRepository
-                .findByName("ROLE_MANAGER")
-                .orElseThrow(() -> new IllegalStateException("ROLE_MANAGER role not found"));
+                .findByName(ROLE_MANAGER_NAME)
+                .orElseThrow(() -> new IllegalStateException(MSG_ROLE_NOT_FOUND));
 
         Team team = new Team();
         team.setTeamName(request.teamName());
@@ -58,15 +65,12 @@ public class AdminService {
 
         if (existingUserOpt.isPresent()) {
             managerUser = existingUserOpt.get();
-            // Validate that the manager is not already actively managing another team
             if (teamManagerRepository.existsByManagerIdAndActiveTrue(managerUser.getId())) {
                 throw new IllegalArgumentException("This user is already an active manager of another team");
             }
-            // Add ROLE_MANAGER role if they don't have it
             if (!managerUser.getRoles().contains(managerRole)) {
                 managerUser.getRoles().add(managerRole);
             }
-            // Update full name to the latest input
             managerUser.setFullName(request.managerName());
             managerUser = userRepository.save(managerUser);
         } else {
@@ -107,7 +111,7 @@ public class AdminService {
         Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException(MSG_TEAM_NOT_FOUND));
 
         if (!team.getTeamName().equals(request.teamName()) && teamRepository.existsByTeamName(request.teamName())) {
-            throw new IllegalArgumentException("Team name already exists");
+            throw new IllegalArgumentException(MSG_TEAM_NAME_EXISTS);
         }
 
         team.setTeamName(request.teamName());
@@ -118,7 +122,7 @@ public class AdminService {
 
             if (!manager.getUsername().equals(request.managerUsername())) {
                 if (userRepository.existsByUsername(request.managerUsername())) {
-                    throw new IllegalArgumentException("Manager DAS ID already exists");
+                    throw new IllegalArgumentException(MSG_MANAGER_DAS_EXISTS);
                 }
                 manager.setUsername(request.managerUsername());
             }
@@ -131,45 +135,24 @@ public class AdminService {
 
         team.setActive(false);
 
-        // Deactivate manager and expire their sessions
-        User manager = getManagerForTeam(teamId);
-        if (manager != null) {
-            manager.setActive(false);
-            expireUserSessions(manager.getId());
-        }
-
-        // Deactivate the team-manager mapping
+        // Deactivate active team manager relationship
         teamManagerRepository.findByTeamIdAndActiveTrue(teamId).ifPresent(tm -> tm.setActive(false));
 
-        // Deactivate employees and expire their sessions
-        List<User> teamMembers = userRepository.findByTeamId(teamId);
-        for (User user : teamMembers) {
-            user.setActive(false);
-            expireUserSessions(user.getId());
-        }
-    }
-
-    private void expireUserSessions(Long userId) {
-        List<Object> principals = sessionRegistry.getAllPrincipals();
-        for (Object principal : principals) {
-            if (principal instanceof com.wfotracker.common.security.CustomUserDetails userDetails
-                    && userDetails.getId().equals(userId)) {
-                List<org.springframework.security.core.session.SessionInformation> sessions =
-                        sessionRegistry.getAllSessions(principal, false);
-                for (org.springframework.security.core.session.SessionInformation session : sessions) {
-                    session.expireNow();
-                }
-            }
+        // Deactivate active employee memberships under this team
+        List<EmployeeMembership> activeMemberships = employeeMembershipRepository.findByTeamIdAndActiveTrue(teamId);
+        for (EmployeeMembership membership : activeMemberships) {
+            membership.setActive(false);
         }
     }
 
     @Transactional
     public void resetManagerPassword(Long managerId) {
-        User manager =
-                userRepository.findById(managerId).orElseThrow(() -> new IllegalArgumentException("Manager not found"));
+        User manager = userRepository
+                .findById(managerId)
+                .orElseThrow(() -> new IllegalArgumentException(MSG_MANAGER_NOT_FOUND));
 
         boolean isManager =
-                manager.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_MANAGER"));
+                manager.getRoles().stream().anyMatch(r -> r.getName().equals(ROLE_MANAGER_NAME));
         if (!isManager) {
             throw new IllegalArgumentException("User is not a manager");
         }

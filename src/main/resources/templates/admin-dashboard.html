@@ -9,52 +9,123 @@
 <div class="container mt-4">
     <div th:replace="~{fragments/layout :: alerts}"></div>
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Teams Management</h2>
-        <a th:href="@{/admin/team/create}" class="btn btn-primary">Create New Team</a>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="fw-bold text-dark">Teams Directory & Compliance</h2>
+        <div class="d-flex align-items-center">
+            <a th:href="@{/admin/export/xlsx}" class="btn btn-outline-success me-2 d-flex align-items-center gap-1">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a th:href="@{/admin/export/csv}" class="btn btn-outline-secondary me-2 d-flex align-items-center gap-1">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+            </a>
+            <a th:href="@{/admin/team/create}" class="btn btn-primary fw-semibold">Create New Team</a>
+        </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Team Name</th>
-                    <th>Manager Name</th>
-                    <th>Manager Username</th>
-                    <th>Status</th>
-                    <th>Employees Count</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="team : ${teams}">
-                    <td th:text="${team.teamName}"></td>
-                    <td th:text="${team.managerName}"></td>
-                    <td th:text="${team.managerUsername}"></td>
-                    <td>
-                        <span th:if="${team.active}" class="badge bg-success">Active</span>
-                        <span th:unless="${team.active}" class="badge bg-danger">Deactivated</span>
-                    </td>
-                    <td th:text="${team.employees.size()}"></td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            <a th:href="@{/admin/team/edit/{id}(id=${team.id})}" class="btn btn-sm btn-outline-primary" th:if="${team.active}">Edit</a>
-                            
-                            <form th:action="@{/admin/manager/reset-password/{id}(id=${team.managerId})}" method="post" th:if="${team.active}">
-                                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Reset manager password to default?')">Reset Pwd</button>
-                            </form>
-
-                            <form th:action="@{/admin/team/deactivate/{id}(id=${team.id})}" method="post" th:if="${team.active}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate team and all members?')">Deactivate</button>
-                            </form>
+    <!-- Bootstrap 5 Accordion View -->
+    <div class="accordion shadow-sm" id="teamsAccordion">
+        <div class="accordion-item" th:each="team, status : ${teams}">
+            <h2 class="accordion-header" th:id="'heading-' + ${team.id}">
+                <button class="accordion-button collapsed d-flex justify-content-between align-items-center" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        th:data-bs-target="'#collapse-' + ${team.id}" 
+                        aria-expanded="false" 
+                        th:aria-controls="'collapse-' + ${team.id}">
+                    <div class="d-flex align-items-center w-100 justify-content-between pe-3 flex-wrap gap-2">
+                        <div>
+                            <span th:classappend="${!team.active} ? 'text-decoration-line-through text-muted fw-normal' : 'fw-bold text-primary'" 
+                                  th:text="${team.teamName}"></span>
+                            <span th:if="${!team.active}" class="badge bg-danger ms-2">Deactivated</span>
+                            <span th:if="${team.active}" class="badge bg-success ms-2">Active</span>
                         </div>
-                    </td>
-                </tr>
-                <tr th:if="${#lists.isEmpty(teams)}">
-                    <td colspan="6" class="text-center">No teams found.</td>
-                </tr>
-            </tbody>
-        </table>
+                        <div class="text-secondary small">
+                            Manager: <strong th:text="${team.managerName != null ? team.managerName : 'No Manager Assigned'}"></strong> 
+                            <span class="mx-2">|</span> 
+                            Employees: <strong th:text="${team.employees.size()}"></strong>
+                        </div>
+                    </div>
+                </button>
+            </h2>
+            <div th:id="'collapse-' + ${team.id}" 
+                 class="accordion-collapse collapse" 
+                 th:aria-labelledby="'heading-' + ${team.id}" 
+                 data-bs-parent="#teamsAccordion">
+                <div class="accordion-body bg-light">
+                    <!-- Team details cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Manager Identity</h5>
+                                    <p class="mb-2"><strong>Full Name:</strong> <span th:text="${team.managerName != null ? team.managerName : 'N/A'}"></span></p>
+                                    <p class="mb-2"><strong>Manager DAS ID:</strong> <code class="text-dark bg-warning-subtle px-1 rounded" th:text="${team.managerUsername != null ? team.managerUsername : 'N/A'}"></code></p>
+                                    <p class="mb-0"><strong>Status:</strong> 
+                                        <span th:if="${team.active}" class="text-success fw-semibold">Active Assignment</span>
+                                        <span th:unless="${team.active}" class="text-danger fw-semibold">Inactive / Deactivated</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center justify-content-end">
+                            <div class="d-flex gap-2 flex-wrap" th:if="${team.active}">
+                                <a th:href="@{/admin/team/edit/{id}(id=${team.id})}" class="btn btn-outline-primary px-3 fw-semibold">Edit Team</a>
+                                
+                                <form th:action="@{/admin/manager/reset-password/{id}(id=${team.managerId})}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-warning px-3 fw-semibold" onclick="return confirm('Are you sure you want to reset the manager password to default?')">Reset Password</button>
+                                </form>
+
+                                <form th:action="@{/admin/team/deactivate/{id}(id=${team.id})}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger px-3 fw-semibold" onclick="return confirm('Are you sure you want to deactivate this team? This automatically suspends its manager and deactivates all employee memberships inside this team.')">Deactivate Team</button>
+                                </form>
+                            </div>
+                            <div th:unless="${team.active}" class="text-muted fw-semibold py-4 pe-4">
+                                No actions available for deactivated teams.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nested Employee Tree List -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Assigned Team Employees</h5>
+                            <div class="table-responsive" th:if="${!#lists.isEmpty(team.employees)}">
+                                <table class="table table-hover table-sm align-middle mb-0">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Employee Name</th>
+                                            <th>Employee DAS ID</th>
+                                            <th>Account Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="emp : ${team.employees}">
+                                            <td>
+                                                <span th:classappend="${!emp.active} ? 'text-decoration-line-through text-muted'" th:text="${emp.fullName}"></span>
+                                            </td>
+                                            <td>
+                                                <code class="text-dark" th:text="${emp.username}"></code>
+                                            </td>
+                                            <td>
+                                                <span th:if="${emp.active}" class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                                                <span th:unless="${emp.active}" class="badge bg-danger-subtle text-danger border border-danger-subtle">Deactivated</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div th:if="${#lists.isEmpty(team.employees)}" class="text-center text-secondary py-3">
+                                No employees assigned to this team.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(teams)}" class="p-5 text-center bg-white border rounded">
+            <h5 class="text-secondary fw-semibold">No teams found in directory.</h5>
+            <p class="text-muted mb-0">Click 'Create New Team' above to register your first corporate team.</p>
+        </div>
     </div>
 </div>
 

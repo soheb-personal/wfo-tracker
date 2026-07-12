@@ -212,4 +212,24 @@ class AdminControllerTest {
                 .andExpect(redirectedUrl("/admin/dashboard"))
                 .andExpect(flash().attribute("error", "Manager not found"));
     }
+
+    @Test
+    void testExportToExcel_Success() throws Exception {
+        TeamDto teamDto = new TeamDto(1L, "Team A", 2L, "Mgr", "mgr", true, Collections.emptyList());
+        when(adminService.getAllTeams()).thenReturn(List.of(teamDto));
+
+        mockMvc.perform(get("/admin/export/xlsx"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+    }
+
+    @Test
+    void testExportToCsv_Success() throws Exception {
+        TeamDto teamDto = new TeamDto(1L, "Team A", 2L, "Mgr", "mgr", true, Collections.emptyList());
+        when(adminService.getAllTeams()).thenReturn(List.of(teamDto));
+
+        mockMvc.perform(get("/admin/export/csv"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv"));
+    }
 }

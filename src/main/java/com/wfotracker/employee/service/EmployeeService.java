@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.wfotracker.domain.entity.Attendance;
+import com.wfotracker.domain.entity.EmployeeMembership;
 import com.wfotracker.domain.entity.User;
 import com.wfotracker.domain.repository.AttendanceRepository;
+import com.wfotracker.domain.repository.EmployeeMembershipRepository;
 import com.wfotracker.domain.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class EmployeeService {
 
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
+    private final EmployeeMembershipRepository employeeMembershipRepository;
 
     @Transactional
     public void checkIn(Long employeeId) {
@@ -37,8 +40,18 @@ public class EmployeeService {
             throw new IllegalStateException("Already checked in for today");
         }
 
+        EmployeeMembership membership = employeeMembershipRepository
+                .findByEmployeeIdAndActiveTrue(employeeId)
+                .orElseThrow(() -> new IllegalStateException("Employee does not have an active team membership"));
+
+        if (membership.getTeam() == null) {
+            throw new IllegalStateException(
+                    "Employee's active membership is missing a valid team assignment. Please recreate the membership.");
+        }
+
         Attendance attendance = new Attendance();
         attendance.setEmployee(employee);
+        attendance.setTeam(membership.getTeam());
         attendance.setOfficeDate(today);
         attendance.setCheckIn(LocalDateTime.now());
 

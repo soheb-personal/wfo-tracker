@@ -1,6 +1,5 @@
 package com.wfotracker.admin.service;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -11,17 +10,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.wfotracker.admin.dto.CreateTeamRequest;
 import com.wfotracker.admin.dto.EditTeamRequest;
 import com.wfotracker.admin.dto.TeamDto;
 import com.wfotracker.common.constants.Role;
-import com.wfotracker.common.security.CustomUserDetails;
+import com.wfotracker.domain.entity.EmployeeMembership;
 import com.wfotracker.domain.entity.Team;
 import com.wfotracker.domain.entity.TeamManager;
 import com.wfotracker.domain.entity.User;
+import com.wfotracker.domain.repository.EmployeeMembershipRepository;
 import com.wfotracker.domain.repository.RoleRepository;
 import com.wfotracker.domain.repository.TeamManagerRepository;
 import com.wfotracker.domain.repository.TeamRepository;
@@ -50,7 +49,7 @@ class AdminServiceTest {
     private TeamManagerRepository teamManagerRepository;
 
     @Mock
-    private org.springframework.security.core.session.SessionRegistry sessionRegistry;
+    private EmployeeMembershipRepository employeeMembershipRepository;
 
     @InjectMocks
     private AdminService adminService;
@@ -285,47 +284,21 @@ class AdminServiceTest {
     void testDeactivateTeam_Success() {
         when(teamRepository.findById(1L)).thenReturn(Optional.of(team));
 
-        // Mock getManagerForTeam returning manager
-        when(userRepository.findByTeamIdAndRole(1L, Role.MANAGER)).thenReturn(List.of(manager));
-
         // Mock teamManager deactivation
         TeamManager tmRecord = new TeamManager();
         tmRecord.setActive(true);
         when(teamManagerRepository.findByTeamIdAndActiveTrue(1L)).thenReturn(Optional.of(tmRecord));
 
-        User employeeUser = new User();
-        employeeUser.setId(3L);
-        employeeUser.setFullName("Amit Khan");
-        employeeUser.setActive(true);
-
-        List<User> members = new ArrayList<>(List.of(employeeUser));
-        when(userRepository.findByTeamId(1L)).thenReturn(members);
-
-        // Setup session deactivation mocks for manager (id 2L) and employee (id 3L)
-        CustomUserDetails mockManagerDetails = mock(CustomUserDetails.class);
-        when(mockManagerDetails.getId()).thenReturn(manager.getId()); // 2L
-
-        CustomUserDetails mockEmployeeDetails = mock(CustomUserDetails.class);
-        when(mockEmployeeDetails.getId()).thenReturn(employeeUser.getId()); // 3L
-
-        List<Object> mockPrincipals = List.of(mockManagerDetails, mockEmployeeDetails);
-        when(sessionRegistry.getAllPrincipals()).thenReturn(mockPrincipals);
-
-        SessionInformation mockManagerSession = mock(SessionInformation.class);
-        when(sessionRegistry.getAllSessions(mockManagerDetails, false)).thenReturn(List.of(mockManagerSession));
-
-        SessionInformation mockEmployeeSession = mock(SessionInformation.class);
-        when(sessionRegistry.getAllSessions(mockEmployeeDetails, false)).thenReturn(List.of(mockEmployeeSession));
+        // Mock employeeMembership deactivation
+        EmployeeMembership membership = new EmployeeMembership();
+        membership.setActive(true);
+        when(employeeMembershipRepository.findByTeamIdAndActiveTrue(1L)).thenReturn(List.of(membership));
 
         adminService.deactivateTeam(1L);
 
         assertFalse(team.isActive());
-        assertFalse(manager.isActive());
         assertFalse(tmRecord.isActive());
-        assertFalse(employeeUser.isActive());
-
-        verify(mockManagerSession, times(1)).expireNow();
-        verify(mockEmployeeSession, times(1)).expireNow();
+        assertFalse(membership.isActive());
     }
 
     @Test

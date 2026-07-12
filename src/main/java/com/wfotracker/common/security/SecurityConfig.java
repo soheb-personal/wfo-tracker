@@ -35,16 +35,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public org.springframework.security.core.session.SessionRegistry sessionRegistry() {
-        return new org.springframework.security.core.session.SessionRegistryImpl();
-    }
-
-    @Bean
-    public org.springframework.security.web.session.HttpSessionEventPublisher httpSessionEventPublisher() {
-        return new org.springframework.security.web.session.HttpSessionEventPublisher();
-    }
-
-    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) {
         try {
             http.authorizeHttpRequests(auth -> auth.requestMatchers(
@@ -71,7 +61,6 @@ public class SecurityConfig {
                     .formLogin(form -> form.loginPage("/login")
                             .successHandler(customAuthenticationSuccessHandler)
                             .permitAll())
-                    .sessionManagement(session -> session.maximumSessions(-1).sessionRegistry(sessionRegistry()))
                     .exceptionHandling(exception -> exception.accessDeniedPage("/error/403"))
                     .logout(logout -> logout.logoutUrl("/logout")
                             .logoutSuccessUrl("/login?logout")

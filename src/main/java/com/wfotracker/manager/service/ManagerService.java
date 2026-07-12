@@ -36,7 +36,6 @@ public class ManagerService {
     private final RoleRepository roleRepository;
     private final TeamManagerRepository teamManagerRepository;
     private final EmployeeMembershipRepository employeeMembershipRepository;
-    private final org.springframework.security.core.session.SessionRegistry sessionRegistry;
 
     @Transactional(readOnly = true)
     public List<User> getEmployeesForManager(Long managerId) {
@@ -126,21 +125,6 @@ public class ManagerService {
         employee.setActive(false);
 
         employeeMembershipRepository.findByEmployeeIdAndActiveTrue(employeeId).ifPresent(m -> m.setActive(false));
-        expireUserSessions(employeeId);
-    }
-
-    private void expireUserSessions(Long userId) {
-        List<Object> principals = sessionRegistry.getAllPrincipals();
-        for (Object principal : principals) {
-            if (principal instanceof com.wfotracker.common.security.CustomUserDetails userDetails
-                    && userDetails.getId().equals(userId)) {
-                List<org.springframework.security.core.session.SessionInformation> sessions =
-                        sessionRegistry.getAllSessions(principal, false);
-                for (org.springframework.security.core.session.SessionInformation session : sessions) {
-                    session.expireNow();
-                }
-            }
-        }
     }
 
     @Transactional
