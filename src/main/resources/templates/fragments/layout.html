@@ -56,16 +56,22 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                    <a class="nav-link" th:href="@{/admin/dashboard}">Dashboard</a>
+                    <a class="nav-link" th:classappend="${activeTab == 'dashboard' ? 'active' : ''}" th:href="@{/admin/dashboard}">Dashboard</a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('MANAGER')">
-                    <a class="nav-link" th:href="@{/manager/dashboard}">Dashboard</a>
+                    <a class="nav-link" th:classappend="${activeTab == 'dashboard' ? 'active' : ''}" th:href="@{/manager/dashboard}">Dashboard</a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('MANAGER')">
+                    <a class="nav-link" th:classappend="${activeTab == 'employees' ? 'active' : ''}" th:href="@{/manager/employee/list}">Employees</a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('MANAGER')">
+                    <a class="nav-link" th:classappend="${activeTab == 'groups' ? 'active' : ''}" th:href="@{/manager/group/list}">Groups</a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('EMPLOYEE')">
-                    <a class="nav-link" th:href="@{/employee/dashboard}">Dashboard</a>
+                    <a class="nav-link" th:classappend="${activeTab == 'dashboard' ? 'active' : ''}" th:href="@{/employee/dashboard}">Dashboard</a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('EMPLOYEE')">
-                    <a class="nav-link" th:href="@{/employee/history}">History</a>
+                    <a class="nav-link" th:classappend="${activeTab == 'history' ? 'active' : ''}" th:href="@{/employee/history}">History</a>
                 </li>
             </ul>
             <ul class="navbar-nav ms-auto">

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Team Groups')}">
+    <title>Team Groups - WFO Tracker</title>
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container mt-4">
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Team Groups</h2>
+        <a th:href="@{/manager/group/create}" class="btn btn-primary">Create New Group</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Group ID</th>
+                    <th>Group Name</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="g : ${groups}">
+                    <td th:text="${g.id}"></td>
+                    <td th:text="${g.groupName}"></td>
+                    <td>
+                        <span th:if="${g.active}" class="badge bg-success">Active</span>
+                        <span th:unless="${g.active}" class="badge bg-danger">Deactivated</span>
+                    </td>
+                    <td>
+                        <form th:action="@{/manager/group/delete/{id}(id=${g.id})}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this group? All assigned employees will be moved to the DEFAULT group.')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(groups)}">
+                    <td colspan="4" class="text-center">No custom groups created yet. All employees are in the "DEFAULT" group.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

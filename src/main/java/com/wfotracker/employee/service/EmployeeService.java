@@ -5,6 +5,8 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -33,7 +35,7 @@ public class EmployeeService {
                 .findById(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("UTC"));
         if (attendanceRepository
                 .findByEmployeeIdAndOfficeDate(employeeId, today)
                 .isPresent()) {
@@ -53,14 +55,14 @@ public class EmployeeService {
         attendance.setEmployee(employee);
         attendance.setTeam(membership.getTeam());
         attendance.setOfficeDate(today);
-        attendance.setCheckIn(LocalDateTime.now());
+        attendance.setCheckIn(LocalDateTime.now(ZoneId.of("UTC")));
 
         attendanceRepository.save(attendance);
     }
 
     @Transactional
     public void checkOut(Long employeeId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("UTC"));
         Attendance attendance = attendanceRepository
                 .findByEmployeeIdAndOfficeDate(employeeId, today)
                 .orElseThrow(() -> new IllegalStateException("No check-in found for today"));
@@ -69,10 +71,12 @@ public class EmployeeService {
             throw new IllegalStateException("Already checked out for today");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         attendance.setCheckOut(now);
 
-        Duration duration = Duration.between(attendance.getCheckIn(), now);
+        java.time.Instant checkInInstant = attendance.getCheckIn().toInstant(ZoneOffset.UTC);
+        java.time.Instant checkOutInstant = now.toInstant(ZoneOffset.UTC);
+        Duration duration = Duration.between(checkInInstant, checkOutInstant);
         BigDecimal hoursSpent =
                 BigDecimal.valueOf(duration.toMinutes()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
         attendance.setHoursSpent(hoursSpent);
@@ -80,15 +84,28 @@ public class EmployeeService {
         attendanceRepository.save(attendance);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Attendance> getAttendanceHistory(Long employeeId, int month, int year) {
+        LocalDate today = LocalDate.now(ZoneId.of("UTC"));
+        List<Attendance> stale = attendanceRepository.findByEmployeeId(employeeId).stream()
+                .filter(a -> a.getCheckOut() == null
+                        && a.getOfficeDate().isBefore(today)
+                        && !"FORGOT".equals(a.getAttendanceType()))
+                .toList();
+
+        if (!stale.isEmpty()) {
+            for (Attendance a : stale) {
+                a.setAttendanceType("FORGOT");
+            }
+            attendanceRepository.saveAll(stale);
+        }
         return attendanceRepository.findByEmployeeIdAndMonthAndYear(employeeId, month, year);
     }
 
     @Transactional(readOnly = true)
     public boolean isCheckedInToday(Long employeeId) {
         return attendanceRepository
-                .findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now())
+                .findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now(ZoneId.of("UTC")))
                 .map(a -> a.getCheckIn() != null && a.getCheckOut() == null)
                 .orElse(false);
     }
@@ -96,7 +113,7 @@ public class EmployeeService {
     @Transactional(readOnly = true)
     public boolean isCheckedOutToday(Long employeeId) {
         return attendanceRepository
-                .findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now())
+                .findByEmployeeIdAndOfficeDate(employeeId, LocalDate.now(ZoneId.of("UTC")))
                 .map(a -> a.getCheckOut() != null)
                 .orElse(false);
     }

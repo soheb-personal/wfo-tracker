@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Manage Employees')}">
+    <title>Manage Employees - WFO Tracker</title>
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container mt-4">
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Team Members</h2>
+        <a th:href="@{/manager/employee/add}" class="btn btn-primary">Add Employee</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>DAS ID</th>
+                    <th>Employee Name</th>
+                    <th>Group</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="m : ${memberships}">
+                    <td th:text="${m.employee.username}" th:style="${m.active ? '' : 'text-decoration: line-through;'}"></td>
+                    <td th:text="${m.employee.fullName}" th:style="${m.active ? '' : 'text-decoration: line-through;'}"></td>
+                    <td th:text="${m.group != null ? m.group.groupName : 'DEFAULT'}" th:style="${m.active ? '' : 'text-decoration: line-through;'}"></td>
+                    <td>
+                        <span th:if="${m.active}" class="badge bg-success">Active</span>
+                        <span th:unless="${m.active}" class="badge bg-danger">Deactivated</span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1 align-items-center">
+                            <a th:href="@{/manager/employee/edit/{id}(id=${m.employee.id})}" class="btn btn-sm btn-outline-primary" th:if="${m.active}">Edit</a>
+                            
+                            <form th:action="@{/manager/employee/deactivate/{id}(id=${m.employee.id})}" method="post" th:if="${m.active}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to deactivate this employee? They will no longer be able to log in.')">Deactivate</button>
+                            </form>
+
+                            <form th:action="@{/manager/employee/delete/{id}(id=${m.employee.id})}" method="post" th:unless="${m.active}">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this deactivated employee? This will permanently remove their team membership but preserve their corporate account and attendance logs.')">Delete Membership</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(memberships)}">
+                    <td colspan="5" class="text-center">No employee memberships found.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

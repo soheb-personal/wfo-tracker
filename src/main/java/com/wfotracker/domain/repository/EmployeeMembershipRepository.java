@@ -19,4 +19,8 @@ public interface EmployeeMembershipRepository extends JpaRepository<EmployeeMemb
     List<EmployeeMembership> findByGroupIdAndActiveTrue(Long groupId);
 
     boolean existsByEmployeeIdAndActiveTrue(Long employeeId);
+
+    List<EmployeeMembership> findByEmployeeId(Long employeeId);
+
+    List<EmployeeMembership> findByManagerId(Long managerId);
 }

@@ -8,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.MethodParameter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -24,6 +23,7 @@ import com.wfotracker.domain.entity.User;
 import com.wfotracker.manager.dto.EditEmployeeRequest;
 import com.wfotracker.manager.service.ManagerService;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -31,11 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class ManagerControllerTest {
@@ -51,31 +47,26 @@ class ManagerControllerTest {
     @InjectMocks
     private ManagerController managerController;
 
-    private User manager;
-    private CustomUserDetails userDetails;
-
     @BeforeEach
     void setUp() {
-        manager = new User();
-        manager.setId(1L);
-        manager.setFullName("John Manager");
-        manager.setUsername("john");
-
-        userDetails = new CustomUserDetails(manager);
-
         InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
         viewResolver.setPrefix("/templates/");
         viewResolver.setSuffix(".html");
 
+        User managerUser = new User();
+        managerUser.setId(1L);
+        managerUser.setUsername("manager");
+        CustomUserDetails userDetails = new CustomUserDetails(managerUser);
+
         HandlerMethodArgumentResolver argumentResolver = new HandlerMethodArgumentResolver() {
             @Override
-            public boolean supportsParameter(MethodParameter parameter) {
+            public boolean supportsParameter(org.springframework.core.MethodParameter parameter) {
                 return parameter.getParameterType().equals(CustomUserDetails.class);
             }
 
             @Override
             public Object resolveArgument(
-                    MethodParameter parameter,
+                    org.springframework.core.MethodParameter parameter,
                     ModelAndViewContainer mavContainer,
                     NativeWebRequest webRequest,
                     WebDataBinderFactory binderFactory) {
@@ -91,20 +82,24 @@ class ManagerControllerTest {
 
     @Test
     void testDashboard_Default() throws Exception {
-        when(managerService.getEmployeesForManager(1L)).thenReturn(Collections.emptyList());
+        when(managerService.getMembershipsForManager(eq(1L), any())).thenReturn(Collections.emptyList());
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/manager/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("manager-dashboard"))
-                .andExpect(model().attributeExists("employeesCompliance", "currentMonth", "currentYear"));
+                .andExpect(model().attributeExists(
+                                "employeesCompliance", "currentMonth", "currentYear", "groups", "showDefault"));
     }
 
     @Test
     void testShowAddEmployeeForm() throws Exception {
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
+
         mockMvc.perform(get("/manager/employee/add"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("employee-form"))
-                .andExpect(model().attributeExists("addEmployeeRequest"));
+                .andExpect(model().attributeExists("addEmployeeRequest", "groups"));
     }
 
     @Test
@@ -119,6 +114,8 @@ class ManagerControllerTest {
 
     @Test
     void testAddEmployee_ValidationError() throws Exception {
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
+
         mockMvc.perform(post("/manager/employee/add").param("employeeName", ""))
                 .andExpect(status().isOk())
                 .andExpect(view().name("employee-form"));
@@ -126,24 +123,27 @@ class ManagerControllerTest {
 
     @Test
     void testListEmployees() throws Exception {
+        when(managerService.getMembershipsForManager(1L, null)).thenReturn(Collections.emptyList());
         when(managerService.getEmployeesForManager(1L)).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/manager/employee/list"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("employee-list"))
-                .andExpect(model().attributeExists("employees"));
+                .andExpect(model().attributeExists("memberships", "employees"));
     }
 
     @Test
     void testShowEditEmployeeForm() throws Exception {
-        EditEmployeeRequest editRequest = new EditEmployeeRequest("Jane", "jane");
+        EditEmployeeRequest editRequest = new EditEmployeeRequest("Jane", "jane", null);
         when(managerService.getEmployeeForEdit(1L, 2L)).thenReturn(editRequest);
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/manager/employee/edit/2"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("employee-edit"))
                 .andExpect(model().attribute("employeeId", 2L))
-                .andExpect(model().attribute("editEmployeeRequest", editRequest));
+                .andExpect(model().attribute("editEmployeeRequest", editRequest))
+                .andExpect(model().attributeExists("groups"));
     }
 
     @Test
@@ -158,12 +158,15 @@ class ManagerControllerTest {
 
     @Test
     void testEditEmployee_ValidationError() throws Exception {
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
+
         mockMvc.perform(post("/manager/employee/edit/2")
                         .param("employeeName", "")
                         .param("username", ""))
                 .andExpect(status().isOk())
                 .andExpect(view().name("employee-edit"))
-                .andExpect(model().attribute("employeeId", 2L));
+                .andExpect(model().attribute("employeeId", 2L))
+                .andExpect(model().attributeExists("groups"));
     }
 
     @Test
@@ -184,6 +187,16 @@ class ManagerControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/manager/dashboard"))
                 .andExpect(flash().attribute("error", "Error"));
+    }
+
+    @Test
+    void testDeleteEmployee_Success() throws Exception {
+        mockMvc.perform(post("/manager/employee/delete/2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/employee/list"))
+                .andExpect(flash().attribute("success", "Employee membership permanently deleted."));
+
+        verify(managerService).deleteDeactivatedEmployee(1L, 2L);
     }
 
     @Test
@@ -223,5 +236,55 @@ class ManagerControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/manager/dashboard"))
                 .andExpect(flash().attribute("success", "Monthly configuration updated."));
+    }
+
+    @Test
+    void testListGroups() throws Exception {
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/manager/group/list"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("group-list"))
+                .andExpect(model().attributeExists("groups"));
+    }
+
+    @Test
+    void testShowCreateGroupForm() throws Exception {
+        mockMvc.perform(get("/manager/group/create"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("group-form"))
+                .andExpect(model().attribute("groupName", ""));
+    }
+
+    @Test
+    void testCreateGroup_Success() throws Exception {
+        mockMvc.perform(post("/manager/group/create").param("groupName", "Engineering"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/group/list"))
+                .andExpect(flash().attribute("success", "Group created successfully."));
+
+        verify(managerService).createGroup(1L, "Engineering");
+    }
+
+    @Test
+    void testDeleteGroup_Success() throws Exception {
+        mockMvc.perform(post("/manager/group/delete/30"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/group/list"))
+                .andExpect(flash().attribute(
+                                "success",
+                                "Group permanently deleted. All assigned employees moved to DEFAULT group."));
+
+        verify(managerService).deleteGroup(1L, 30L);
+    }
+
+    @Test
+    void testViewEmployeeHistory() throws Exception {
+        when(managerService.getAttendanceHistory(2L, 7, 2026)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/manager/employee/history/2").param("month", "7").param("year", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("attendance-history"))
+                .andExpect(model().attributeExists("history", "currentMonth", "currentYear", "employeeId"));
     }
 }

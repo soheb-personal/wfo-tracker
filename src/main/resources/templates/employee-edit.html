@@ -29,6 +29,14 @@
                             <div class="text-danger" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="groupId" class="form-label">Team Group (Optional)</label>
+                            <select class="form-select" id="groupId" th:field="*{groupId}">
+                                <option value="">None (DEFAULT)</option>
+                                <option th:each="g : ${groups}" th:value="${g.id}" th:text="${g.groupName}"></option>
+                            </select>
+                        </div>
+
                         <div class="d-flex justify-content-between">
                             <a th:href="@{/manager/dashboard}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">Update Employee</button>

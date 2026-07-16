@@ -26,6 +26,14 @@
             <input type="number" name="year" id="year" class="form-control" th:value="${currentYear}" required min="2000" max="2100">
         </div>
         <div class="col-auto">
+            <label for="groupId" class="form-label">Group</label>
+            <select name="groupId" id="groupId" class="form-select">
+                <option value="">All Groups</option>
+                <option value="-1" th:selected="${groupIdSelected == -1}" th:if="${showDefault}">DEFAULT</option>
+                <option th:each="g : ${groups}" th:value="${g.id}" th:text="${g.groupName}" th:selected="${g.id == groupIdSelected}"></option>
+            </select>
+        </div>
+        <div class="col-auto">
             <button type="submit" class="btn btn-secondary">Filter</button>
         </div>
     </form>
@@ -45,7 +53,7 @@
             </thead>
             <tbody>
                 <tr th:each="emp : ${employeesCompliance}">
-                    <td th:text="${emp.employeeName} + ' (' + ${emp.username} + ')'"></td>
+                    <td th:text="${emp.employeeName} + ' (' + ${emp.username} + ')'" th:style="${emp.active ? '' : 'text-decoration: line-through;'}"></td>
                     <td>
                         <span th:if="${emp.active}" class="badge bg-success">Active</span>
                         <span th:unless="${emp.active}" class="badge bg-danger">Deactivated</span>
@@ -53,7 +61,6 @@
                     <td th:text="${emp.requiredOfficeDays}"></td>
                     <td>
                         <span th:text="${emp.actualOfficeDaysVisited}"></span>
-                        <div th:if="${emp.manualCheckins > 0}" class="text-muted" style="font-size: 0.8rem;" th:text="'+ ' + ${emp.manualCheckins} + ' Manual'"></div>
                     </td>
                     <td th:text="${emp.remainingOfficeDays}"></td>
                     <td>
@@ -70,16 +77,12 @@
                     </td>
                     <td>
                         <div class="d-flex gap-1 flex-wrap">
-                            <a th:href="@{/manager/employee/edit/{id}(id=${emp.employeeId})}" class="btn btn-sm btn-outline-primary" th:if="${emp.active}">Edit</a>
-                            
                             <a th:href="@{/manager/employee/configure/{id}(id=${emp.employeeId}, month=${currentMonth}, year=${currentYear})}" class="btn btn-sm btn-outline-info" th:if="${emp.active}">Config</a>
 
-                            <form th:action="@{/manager/employee/reset-password/{id}(id=${emp.employeeId})}" method="post" th:if="${emp.active}">
-                                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Reset employee password to default?')">Reset Pwd</button>
-                            </form>
+                            <a th:href="@{/manager/employee/history/{id}(id=${emp.employeeId}, month=${currentMonth}, year=${currentYear})}" class="btn btn-sm btn-outline-secondary">History</a>
 
-                            <form th:action="@{/manager/employee/deactivate/{id}(id=${emp.employeeId})}" method="post" th:if="${emp.active}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate employee?')">Deactivate</button>
+                            <form th:action="@{/manager/employee/reset-password/{id}(id=${emp.employeeId})}" method="post" th:if="${emp.active}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Reset employee password to default?')">Reset Pwd</button>
                             </form>
                         </div>
                     </td>

@@ -11,4 +11,10 @@ public record EditEmployeeRequest(
         @NotBlank(message = "Employee DAS ID is required")
                 @Size(max = 10, message = "Employee DAS ID length must be less than or equal to 10")
                 @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "Employee DAS ID must be alphanumeric only")
-                String username) {}
+                String username,
+        Long groupId) {
+
+    public EditEmployeeRequest(String employeeName, String username) {
+        this(employeeName, username, null);
+    }
+}

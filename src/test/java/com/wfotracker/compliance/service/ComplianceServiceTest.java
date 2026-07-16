@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.wfotracker.domain.entity.MonthlyConfiguration;
 import com.wfotracker.domain.entity.User;
@@ -13,6 +12,8 @@ import com.wfotracker.domain.repository.MonthlyConfigurationRepository;
 import com.wfotracker.manager.dto.EmployeeComplianceDto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ComplianceServiceTest {
 
@@ -36,8 +37,8 @@ class ComplianceServiceTest {
 
     @Test
     void testComplianceWithManualCheckins() {
-        AttendanceRepository attendanceRepository = Mockito.mock(AttendanceRepository.class);
-        MonthlyConfigurationRepository monthlyConfigRepository = Mockito.mock(MonthlyConfigurationRepository.class);
+        AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+        MonthlyConfigurationRepository monthlyConfigRepository = mock(MonthlyConfigurationRepository.class);
         ComplianceService complianceService = new ComplianceService(attendanceRepository, monthlyConfigRepository);
 
         User employee = new User();
@@ -57,11 +58,11 @@ class ComplianceServiceTest {
         config.setRequiredOfficeDays(9); // (23 - 2 - 1 - 2) * 50% = 18 * 0.5 = 9
         config.setManualCheckins(3); // 3 manual checkins
 
-        Mockito.when(monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(1L, 7, 2026))
+        when(monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(1L, 7, 2026))
                 .thenReturn(Optional.of(config));
 
         // DB attendance records = 4 days
-        Mockito.when(attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(1L, 7, 2026))
+        when(attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(1L, 7, 2026))
                 .thenReturn(4);
 
         EmployeeComplianceDto dto = complianceService.getComplianceForEmployee(employee, 7, 2026);

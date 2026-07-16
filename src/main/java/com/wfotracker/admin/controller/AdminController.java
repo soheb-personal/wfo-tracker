@@ -55,6 +55,7 @@ public class AdminController {
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
         model.addAttribute(ATTR_TEAMS, adminService.getAllTeams());
+        model.addAttribute("activeTab", "dashboard");
         return "admin-dashboard";
     }
 

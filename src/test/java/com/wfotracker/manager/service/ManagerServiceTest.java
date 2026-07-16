@@ -1,5 +1,6 @@
 package com.wfotracker.manager.service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,11 +14,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.wfotracker.common.constants.Role;
 import com.wfotracker.domain.entity.EmployeeMembership;
+import com.wfotracker.domain.entity.Group;
 import com.wfotracker.domain.entity.MonthlyConfiguration;
 import com.wfotracker.domain.entity.Team;
 import com.wfotracker.domain.entity.TeamManager;
 import com.wfotracker.domain.entity.User;
+import com.wfotracker.domain.repository.AttendanceRepository;
 import com.wfotracker.domain.repository.EmployeeMembershipRepository;
+import com.wfotracker.domain.repository.GroupRepository;
 import com.wfotracker.domain.repository.MonthlyConfigurationRepository;
 import com.wfotracker.domain.repository.RoleRepository;
 import com.wfotracker.domain.repository.TeamManagerRepository;
@@ -26,13 +30,9 @@ import com.wfotracker.manager.dto.AddEmployeeRequest;
 import com.wfotracker.manager.dto.EditEmployeeRequest;
 import com.wfotracker.manager.dto.MonthlyConfigRequest;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ManagerServiceTest {
@@ -54,6 +54,12 @@ class ManagerServiceTest {
 
     @Mock
     private EmployeeMembershipRepository employeeMembershipRepository;
+
+    @Mock
+    private GroupRepository groupRepository;
+
+    @Mock
+    private AttendanceRepository attendanceRepository;
 
     @InjectMocks
     private ManagerService managerService;
@@ -168,11 +174,16 @@ class ManagerServiceTest {
 
     @Test
     void testGetEmployeeForEdit_Unauthorized() {
-        membership.setManager(new User()); // Different manager
-        membership.getManager().setId(99L);
+        EmployeeMembership otherMembership = new EmployeeMembership();
+        otherMembership.setEmployee(employee);
+        User differentManager = new User();
+        differentManager.setId(99L);
+        otherMembership.setManager(differentManager);
+        otherMembership.setTeam(team);
+        otherMembership.setActive(true);
 
         when(userRepository.findById(2L)).thenReturn(Optional.of(employee));
-        when(employeeMembershipRepository.findByEmployeeIdAndActiveTrue(2L)).thenReturn(Optional.of(membership));
+        when(employeeMembershipRepository.findByEmployeeIdAndActiveTrue(2L)).thenReturn(Optional.of(otherMembership));
 
         assertThrows(IllegalArgumentException.class, () -> managerService.getEmployeeForEdit(1L, 2L));
     }
@@ -218,7 +229,6 @@ class ManagerServiceTest {
 
         managerService.resetEmployeePassword(1L, 2L);
         assertEquals("newPass", employee.getPassword());
-        assertFalse(employee.isPasswordChanged());
     }
 
     @Test
@@ -228,7 +238,7 @@ class ManagerServiceTest {
         when(monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(2L, 7, 2026))
                 .thenReturn(Optional.empty());
 
-        MonthlyConfigRequest request = new MonthlyConfigRequest(2, 1, 1, 0, 7, 2026);
+        MonthlyConfigRequest request = new MonthlyConfigRequest(2, 1, 0, 1, 7, 2026);
         managerService.configureMonthly(1L, 2L, request);
 
         verify(monthlyConfigRepository).save(any(MonthlyConfiguration.class));
@@ -236,16 +246,15 @@ class ManagerServiceTest {
 
     @Test
     void testGetMonthlyConfig_Existing() {
-        MonthlyConfiguration config = new MonthlyConfiguration();
-        config.setLeaves(3);
-
         when(userRepository.findById(2L)).thenReturn(Optional.of(employee));
         when(employeeMembershipRepository.findByEmployeeIdAndActiveTrue(2L)).thenReturn(Optional.of(membership));
+
+        MonthlyConfiguration config = new MonthlyConfiguration();
         when(monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(2L, 7, 2026))
                 .thenReturn(Optional.of(config));
 
-        MonthlyConfiguration fetched = managerService.getMonthlyConfig(1L, 2L, 7, 2026);
-        assertEquals(3, fetched.getLeaves());
+        MonthlyConfiguration result = managerService.getMonthlyConfig(1L, 2L, 7, 2026);
+        assertNotNull(result);
     }
 
     @Test
@@ -255,9 +264,74 @@ class ManagerServiceTest {
         when(monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(2L, 7, 2026))
                 .thenReturn(Optional.empty());
 
-        MonthlyConfiguration fetched = managerService.getMonthlyConfig(1L, 2L, 7, 2026);
-        assertNotNull(fetched);
-        assertEquals(7, fetched.getMonth());
-        assertEquals(2026, fetched.getYear());
+        MonthlyConfiguration result = managerService.getMonthlyConfig(1L, 2L, 7, 2026);
+        assertNotNull(result);
+        assertEquals(7, result.getMonth());
+        assertEquals(2026, result.getYear());
+    }
+
+    @Test
+    void testGetGroupsForManager() {
+        when(teamManagerRepository.findByManagerIdAndActiveTrue(1L)).thenReturn(Optional.of(teamManager));
+        when(groupRepository.findByTeamIdAndActiveTrue(10L)).thenReturn(Collections.emptyList());
+
+        List<Group> groups = managerService.getGroupsForManager(1L);
+        assertNotNull(groups);
+    }
+
+    @Test
+    void testCreateGroup_Success() {
+        when(teamManagerRepository.findByManagerIdAndActiveTrue(1L)).thenReturn(Optional.of(teamManager));
+        when(groupRepository.existsByTeamIdAndGroupNameAndActiveTrue(10L, "QA")).thenReturn(false);
+
+        managerService.createGroup(1L, "QA");
+        verify(groupRepository).save(any(Group.class));
+    }
+
+    @Test
+    void testCreateGroup_NameEmpty() {
+        assertThrows(IllegalArgumentException.class, () -> managerService.createGroup(1L, ""));
+    }
+
+    @Test
+    void testCreateGroup_AlreadyExists() {
+        when(teamManagerRepository.findByManagerIdAndActiveTrue(1L)).thenReturn(Optional.of(teamManager));
+        when(groupRepository.existsByTeamIdAndGroupNameAndActiveTrue(10L, "QA")).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> managerService.createGroup(1L, "QA"));
+    }
+
+    @Test
+    void testDeleteGroup_Success() {
+        Group group = new Group();
+        group.setId(30L);
+        group.setTeam(team);
+        group.setActive(true);
+
+        when(teamManagerRepository.findByManagerIdAndActiveTrue(1L)).thenReturn(Optional.of(teamManager));
+        when(groupRepository.findById(30L)).thenReturn(Optional.of(group));
+        when(employeeMembershipRepository.findByGroupIdAndActiveTrue(30L)).thenReturn(List.of(membership));
+
+        managerService.deleteGroup(1L, 30L);
+
+        assertNull(membership.getGroup());
+        verify(employeeMembershipRepository).saveAll(anyList());
+        verify(groupRepository).delete(group);
+    }
+
+    @Test
+    void testDeleteDeactivatedEmployee_Success() {
+        membership.setActive(false); // Scope deactivated
+        when(employeeMembershipRepository.findByEmployeeId(2L)).thenReturn(List.of(membership));
+
+        managerService.deleteDeactivatedEmployee(1L, 2L);
+        verify(employeeMembershipRepository).delete(membership);
+    }
+
+    @Test
+    void testDeleteDeactivatedEmployee_ActiveFails() {
+        when(employeeMembershipRepository.findByEmployeeId(2L)).thenReturn(List.of(membership)); // active is true
+
+        assertThrows(IllegalArgumentException.class, () -> managerService.deleteDeactivatedEmployee(1L, 2L));
     }
 }

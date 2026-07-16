@@ -16,6 +16,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     Optional<Attendance> findByEmployeeIdAndOfficeDate(Long employeeId, LocalDate officeDate);
 
+    List<Attendance> findByEmployeeId(Long employeeId);
+
     @Query(
             "SELECT a FROM Attendance a WHERE a.employee.id = :employeeId AND YEAR(a.officeDate) = :year AND MONTH(a.officeDate) = :month ORDER BY a.officeDate DESC")
     List<Attendance> findByEmployeeIdAndMonthAndYear(

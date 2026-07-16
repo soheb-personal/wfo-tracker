@@ -1,6 +1,7 @@
 package com.wfotracker.employee.controller;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -28,13 +29,14 @@ public class EmployeeController {
 
     @GetMapping("/dashboard")
     public String dashboard(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(ZoneId.of("UTC"));
         EmployeeComplianceDto compliance =
                 complianceService.getComplianceForEmployee(userDetails.getUser(), now.getMonthValue(), now.getYear());
 
         model.addAttribute("compliance", compliance);
         model.addAttribute("isCheckedIn", employeeService.isCheckedInToday(userDetails.getId()));
         model.addAttribute("isCheckedOut", employeeService.isCheckedOutToday(userDetails.getId()));
+        model.addAttribute("activeTab", "dashboard");
 
         return "employee-dashboard";
     }
@@ -69,12 +71,13 @@ public class EmployeeController {
             @RequestParam(required = false) Integer year,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             Model model) {
-        int m = month != null ? month : LocalDate.now().getMonthValue();
-        int y = year != null ? year : LocalDate.now().getYear();
+        int m = month != null ? month : LocalDate.now(ZoneId.of("UTC")).getMonthValue();
+        int y = year != null ? year : LocalDate.now(ZoneId.of("UTC")).getYear();
 
         model.addAttribute("history", employeeService.getAttendanceHistory(userDetails.getId(), m, y));
         model.addAttribute("currentMonth", m);
         model.addAttribute("currentYear", y);
+        model.addAttribute("activeTab", "history");
         return "attendance-history";
     }
 }

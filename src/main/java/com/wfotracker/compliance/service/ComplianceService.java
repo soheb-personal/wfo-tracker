@@ -23,7 +23,15 @@ public class ComplianceService {
 
     @Transactional(readOnly = true)
     public EmployeeComplianceDto getComplianceForEmployee(User employee, int month, int year) {
+        return calculateCompliance(employee, employee.isActive(), month, year);
+    }
 
+    @Transactional(readOnly = true)
+    public EmployeeComplianceDto getComplianceForEmployee(User employee, boolean active, int month, int year) {
+        return calculateCompliance(employee, active, month, year);
+    }
+
+    private EmployeeComplianceDto calculateCompliance(User employee, boolean active, int month, int year) {
         MonthlyConfiguration config = monthlyConfigRepository
                 .findByEmployeeIdAndMonthAndYear(employee.getId(), month, year)
                 .orElseGet(() -> {
@@ -40,13 +48,15 @@ public class ComplianceService {
         int remainingDays = Math.max(0, requiredDays - visitedDays);
         int compliancePercentage =
                 requiredDays > 0 ? (int) Math.round(((double) visitedDays / requiredDays) * 100) : 100;
-        if (compliancePercentage > 100) compliancePercentage = 100;
+        if (compliancePercentage > 100) {
+            compliancePercentage = 100;
+        }
 
         return new EmployeeComplianceDto(
                 employee.getId(),
                 employee.getFullName(),
                 employee.getUsername(),
-                employee.isActive(),
+                active,
                 config.getWorkingDays(),
                 config.getLeaves(),
                 config.getPublicHolidays(),

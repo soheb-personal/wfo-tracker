@@ -65,13 +65,11 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void handleAccessDeniedExceptionTest() throws Exception {
-        try {
+    void handleAccessDeniedExceptionTest() {
+        Exception exception = org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () -> {
             mockMvc.perform(get("/test-access-denied"));
-            org.junit.jupiter.api.Assertions.fail("Should have thrown AccessDeniedException");
-        } catch (Exception e) {
-            org.junit.jupiter.api.Assertions.assertTrue(
-                    e.getCause() instanceof org.springframework.security.access.AccessDeniedException);
-        }
+        });
+        org.junit.jupiter.api.Assertions.assertTrue(
+                exception.getCause() instanceof org.springframework.security.access.AccessDeniedException);
     }
 }
