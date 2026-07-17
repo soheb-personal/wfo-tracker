@@ -11,7 +11,11 @@
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>My Team - Compliance Dashboard</h2>
-        <a th:href="@{/manager/employee/add}" class="btn btn-primary">Add Employee</a>
+        <div>
+            <a th:href="@{/manager/export/xlsx(month=${currentMonth}, year=${currentYear}, groupId=${groupIdSelected})}" class="btn btn-outline-success btn-sm me-1">Export Excel</a>
+            <a th:href="@{/manager/export/csv(month=${currentMonth}, year=${currentYear}, groupId=${groupIdSelected})}" class="btn btn-outline-secondary btn-sm me-2">Export CSV</a>
+            <a th:href="@{/manager/employee/add}" class="btn btn-primary btn-sm">Add Employee</a>
+        </div>
     </div>
 
     <form method="get" class="row g-3 mb-4 align-items-end">

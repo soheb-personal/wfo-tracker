@@ -24,7 +24,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("employeeId") Long employeeId, @Param("month") int month, @Param("year") int year);
 
     @Query(
-            "SELECT COUNT(a) FROM Attendance a WHERE a.employee.id = :employeeId AND YEAR(a.officeDate) = :year AND MONTH(a.officeDate) = :month AND a.checkIn IS NOT NULL")
+            "SELECT COUNT(a) FROM Attendance a WHERE a.employee.id = :employeeId AND YEAR(a.officeDate) = :year AND MONTH(a.officeDate) = :month AND ((a.attendanceType = 'NORMAL' AND a.checkIn IS NOT NULL) OR a.attendanceType = 'MANUAL_ENTRY')")
     int countVisitedDaysByEmployeeIdAndMonthAndYear(
             @Param("employeeId") Long employeeId, @Param("month") int month, @Param("year") int year);
 }

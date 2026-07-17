@@ -3,6 +3,7 @@ package com.wfotracker.domain.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -42,4 +43,24 @@ public class Attendance extends BaseEntity {
 
     @Column(name = "attendance_type", nullable = false, length = 20)
     private String attendanceType = "NORMAL";
+
+    public LocalDateTime getCheckInLocal() {
+        if (this.checkIn == null) {
+            return null;
+        }
+        return this.checkIn
+                .atZone(ZoneId.of("UTC"))
+                .withZoneSameInstant(ZoneId.of("Asia/Kolkata"))
+                .toLocalDateTime();
+    }
+
+    public LocalDateTime getCheckOutLocal() {
+        if (this.checkOut == null) {
+            return null;
+        }
+        return this.checkOut
+                .atZone(ZoneId.of("UTC"))
+                .withZoneSameInstant(ZoneId.of("Asia/Kolkata"))
+                .toLocalDateTime();
+    }
 }

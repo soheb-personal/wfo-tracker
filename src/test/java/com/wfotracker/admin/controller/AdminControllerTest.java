@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import com.wfotracker.admin.dto.CreateTeamRequest;
@@ -42,8 +43,12 @@ class AdminControllerTest {
         viewResolver.setPrefix("/templates/");
         viewResolver.setSuffix(".html");
 
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+
         mockMvc = MockMvcBuilders.standaloneSetup(adminController)
                 .setViewResolvers(viewResolver)
+                .setValidator(validator)
                 .build();
     }
 
@@ -231,5 +236,27 @@ class AdminControllerTest {
         mockMvc.perform(get("/admin/export/csv"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("text/csv"));
+    }
+
+    @Test
+    void testDeleteTeam_Success() throws Exception {
+        mockMvc.perform(post("/admin/team/delete/1"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/dashboard"))
+                .andExpect(flash().attribute("success", "Team deleted successfully."));
+
+        verify(adminService).deleteTeam(1L);
+    }
+
+    @Test
+    void testDeleteTeam_Failure() throws Exception {
+        doThrow(new IllegalArgumentException("Cannot delete active team"))
+                .when(adminService)
+                .deleteTeam(1L);
+
+        mockMvc.perform(post("/admin/team/delete/1"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/dashboard"))
+                .andExpect(flash().attribute("error", "Cannot delete active team"));
     }
 }

@@ -1,5 +1,6 @@
 package com.wfotracker.domain.repository;
 
+import java.time.Month;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -172,5 +173,29 @@ class RepositoryPhase1Test {
         assertTrue(activeMembership.isPresent());
         assertEquals(team.getId(), activeMembership.get().getTeam().getId());
         assertEquals(group.getId(), activeMembership.get().getGroup().getId());
+    }
+
+    @Test
+    void testAttendanceLocalTimezoneConversion() {
+        com.wfotracker.domain.entity.Attendance att = new com.wfotracker.domain.entity.Attendance();
+
+        // Check null behavior
+        org.junit.jupiter.api.Assertions.assertNull(att.getCheckInLocal());
+        org.junit.jupiter.api.Assertions.assertNull(att.getCheckOutLocal());
+
+        // Set check-in and checkout in UTC
+        java.time.LocalDateTime utcIn = java.time.LocalDateTime.of(2026, Month.JULY, 17, 10, 0, 0); // 10:00 AM UTC
+        java.time.LocalDateTime utcOut = java.time.LocalDateTime.of(2026, Month.JULY, 17, 18, 0, 0); // 6:00 PM UTC
+        att.setCheckIn(utcIn);
+        att.setCheckOut(utcOut);
+
+        // Convert to local time in Asia/Kolkata (IST = UTC + 5:30)
+        java.time.LocalDateTime expectedInLocal =
+                java.time.LocalDateTime.of(2026, Month.JULY, 17, 15, 30, 0); // 3:30 PM IST
+        java.time.LocalDateTime expectedOutLocal =
+                java.time.LocalDateTime.of(2026, Month.JULY, 17, 23, 30, 0); // 11:30 PM IST
+
+        assertEquals(expectedInLocal, att.getCheckInLocal());
+        assertEquals(expectedOutLocal, att.getCheckOutLocal());
     }
 }

@@ -9,6 +9,10 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Attendance History</h2>
+        <div th:if="${#authorization.expression('hasRole(''ROLE_EMPLOYEE'')')}">
+            <a th:href="@{/employee/export/xlsx(month=${currentMonth}, year=${currentYear})}" class="btn btn-outline-success btn-sm">Export Excel</a>
+            <a th:href="@{/employee/export/csv(month=${currentMonth}, year=${currentYear})}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
+        </div>
     </div>
 
     <form method="get" class="row g-3 mb-4 align-items-end">
@@ -40,9 +44,9 @@
             <tbody>
                 <tr th:each="att : ${history}">
                     <td th:text="${att.officeDate}"></td>
-                    <td th:text="${att.checkIn != null ? #temporals.format(att.checkIn, 'HH:mm:ss') : '-'}"></td>
-                    <td th:text="${att.attendanceType == 'FORGOT' ? 'Forgot' : (att.checkOut != null ? #temporals.format(att.checkOut, 'HH:mm:ss') : '-')}"></td>
-                    <td th:text="${att.attendanceType == 'FORGOT' ? '-' : (att.hoursSpent != null ? att.hoursSpent + ' hrs' : '-')}"></td>
+                    <td th:text="${att.getCheckInLocal() != null ? #temporals.format(att.getCheckInLocal(), 'HH:mm:ss') : '-'}"></td>
+                    <td th:text="${att.getCheckOutLocal() != null ? #temporals.format(att.getCheckOutLocal(), 'HH:mm:ss') : (att.officeDate.isBefore(today) ? 'Forgot' : '-')}"></td>
+                    <td th:text="${att.getCheckOutLocal() != null ? att.hoursSpent + ' hrs' : '-'}"></td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(history)}">
                     <td colspan="4" class="text-center">No attendance records found for this period.</td>

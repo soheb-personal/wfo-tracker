@@ -132,6 +132,17 @@ public class AdminController {
         return REDIRECT_ADMIN_DASHBOARD;
     }
 
+    @PostMapping("/team/delete/{id}")
+    public String deleteTeam(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            adminService.deleteTeam(id);
+            redirectAttributes.addFlashAttribute(ATTR_SUCCESS, "Team deleted successfully.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute(ATTR_ERROR, e.getMessage());
+        }
+        return REDIRECT_ADMIN_DASHBOARD;
+    }
+
     @PostMapping("/manager/reset-password/{id}")
     public String resetManagerPassword(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {

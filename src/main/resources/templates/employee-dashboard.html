@@ -22,7 +22,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-dark text-white">
@@ -92,6 +92,42 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent History & Exports Embed -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Current Month Detailed Attendance History</h5>
+            <div>
+                <a th:href="@{/employee/export/xlsx(month=${currentMonth}, year=${currentYear})}" class="btn btn-sm btn-light me-1">Export Excel</a>
+                <a th:href="@{/employee/export/csv(month=${currentMonth}, year=${currentYear})}" class="btn btn-sm btn-light">Export CSV</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Date</th>
+                            <th>Check In</th>
+                            <th>Check Out</th>
+                            <th>Hours Spent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="att : ${history}">
+                            <td th:text="${att.officeDate}"></td>
+                            <td th:text="${att.getCheckInLocal() != null ? #temporals.format(att.getCheckInLocal(), 'HH:mm:ss') : '-'}"></td>
+                            <td th:text="${att.getCheckOutLocal() != null ? #temporals.format(att.getCheckOutLocal(), 'HH:mm:ss') : (att.officeDate.isBefore(today) ? 'Forgot' : '-')}"></td>
+                            <td th:text="${att.getCheckOutLocal() != null ? att.hoursSpent + ' hrs' : '-'}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(history)}">
+                            <td colspan="4" class="text-center">No attendance records found for this month.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

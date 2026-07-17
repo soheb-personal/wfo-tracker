@@ -84,21 +84,8 @@ public class EmployeeService {
         attendanceRepository.save(attendance);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Attendance> getAttendanceHistory(Long employeeId, int month, int year) {
-        LocalDate today = LocalDate.now(ZoneId.of("UTC"));
-        List<Attendance> stale = attendanceRepository.findByEmployeeId(employeeId).stream()
-                .filter(a -> a.getCheckOut() == null
-                        && a.getOfficeDate().isBefore(today)
-                        && !"FORGOT".equals(a.getAttendanceType()))
-                .toList();
-
-        if (!stale.isEmpty()) {
-            for (Attendance a : stale) {
-                a.setAttendanceType("FORGOT");
-            }
-            attendanceRepository.saveAll(stale);
-        }
         return attendanceRepository.findByEmployeeIdAndMonthAndYear(employeeId, month, year);
     }
 

@@ -1,6 +1,8 @@
 package com.wfotracker.employee.controller;
 
+import java.time.LocalDate;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import com.wfotracker.common.security.CustomUserDetails;
 import com.wfotracker.compliance.service.ComplianceService;
+import com.wfotracker.domain.entity.Attendance;
 import com.wfotracker.domain.entity.User;
 import com.wfotracker.employee.service.EmployeeService;
 import com.wfotracker.manager.dto.EmployeeComplianceDto;
@@ -30,6 +33,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -96,11 +100,13 @@ class EmployeeControllerTest {
                 .thenReturn(compliance);
         when(employeeService.isCheckedInToday(1L)).thenReturn(false);
         when(employeeService.isCheckedOutToday(1L)).thenReturn(false);
+        when(employeeService.getAttendanceHistory(eq(1L), anyInt(), anyInt())).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/employee/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("employee-dashboard"))
-                .andExpect(model().attribute("compliance", compliance));
+                .andExpect(model().attribute("compliance", compliance))
+                .andExpect(model().attributeExists("history", "today"));
     }
 
     @Test
@@ -150,6 +156,30 @@ class EmployeeControllerTest {
         mockMvc.perform(get("/employee/history"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("attendance-history"))
-                .andExpect(model().attributeExists("history", "currentMonth", "currentYear"));
+                .andExpect(model().attributeExists("history", "currentMonth", "currentYear", "today"));
+    }
+
+    @Test
+    void testExportToExcel_Success() throws Exception {
+        Attendance att = new Attendance();
+        att.setOfficeDate(LocalDate.now());
+        att.setAttendanceType("NORMAL");
+        when(employeeService.getAttendanceHistory(eq(1L), anyInt(), anyInt())).thenReturn(List.of(att));
+
+        mockMvc.perform(get("/employee/export/xlsx"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+    }
+
+    @Test
+    void testExportToCsv_Success() throws Exception {
+        Attendance att = new Attendance();
+        att.setOfficeDate(LocalDate.now());
+        att.setAttendanceType("NORMAL");
+        when(employeeService.getAttendanceHistory(eq(1L), anyInt(), anyInt())).thenReturn(List.of(att));
+
+        mockMvc.perform(get("/employee/export/csv"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv"));
     }
 }

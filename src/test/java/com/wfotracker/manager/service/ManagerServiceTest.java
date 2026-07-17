@@ -334,4 +334,55 @@ class ManagerServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> managerService.deleteDeactivatedEmployee(1L, 2L));
     }
+
+    @Test
+    void testAddEmployee_InvalidGroup() {
+        AddEmployeeRequest req = new AddEmployeeRequest("Jane Smith", "janesmith", 99L);
+        com.wfotracker.domain.entity.Role empRole = new com.wfotracker.domain.entity.Role();
+        empRole.setName("ROLE_EMPLOYEE");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(manager));
+        when(teamManagerRepository.findByManagerIdAndActiveTrue(1L)).thenReturn(Optional.of(teamManager));
+        when(roleRepository.findByName("ROLE_EMPLOYEE")).thenReturn(Optional.of(empRole));
+        when(groupRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> managerService.addEmployee(1L, req));
+    }
+
+    @Test
+    void testEditEmployee_NoActiveMembership() {
+        EditEmployeeRequest req = new EditEmployeeRequest("Jane New", "janenew", null);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(employee));
+        when(employeeMembershipRepository.findByEmployeeIdAndActiveTrue(2L)).thenReturn(Optional.empty());
+        when(employeeMembershipRepository.findByEmployeeId(2L)).thenReturn(Collections.emptyList());
+
+        assertThrows(IllegalArgumentException.class, () -> managerService.editEmployee(1L, 2L, req));
+    }
+
+    @Test
+    void testEditEmployee_InvalidGroup() {
+        EditEmployeeRequest req = new EditEmployeeRequest("Jane New", "janenew", 99L);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(employee));
+        when(employeeMembershipRepository.findByEmployeeIdAndActiveTrue(2L)).thenReturn(Optional.of(membership));
+        when(groupRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> managerService.editEmployee(1L, 2L, req));
+    }
+
+    @Test
+    void testAddEmployee_Success_SingleName() {
+        AddEmployeeRequest req = new AddEmployeeRequest("Jane", "jane", null);
+        com.wfotracker.domain.entity.Role empRole = new com.wfotracker.domain.entity.Role();
+        empRole.setName("ROLE_EMPLOYEE");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(manager));
+        when(teamManagerRepository.findByManagerIdAndActiveTrue(1L)).thenReturn(Optional.of(teamManager));
+        when(roleRepository.findByName("ROLE_EMPLOYEE")).thenReturn(Optional.of(empRole));
+        when(userRepository.findByUsername("jane")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(any())).thenReturn("encodedPass");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        managerService.addEmployee(1L, req);
+        verify(employeeMembershipRepository).save(any());
+    }
 }

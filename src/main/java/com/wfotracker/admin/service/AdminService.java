@@ -179,4 +179,15 @@ public class AdminService {
                 .findFirst()
                 .orElse(null);
     }
+
+    @Transactional
+    public void deleteTeam(Long teamId) {
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException(MSG_TEAM_NOT_FOUND));
+
+        if (team.isActive()) {
+            throw new IllegalArgumentException("Cannot delete an active team. Deactivate it first.");
+        }
+
+        teamRepository.delete(team);
+    }
 }

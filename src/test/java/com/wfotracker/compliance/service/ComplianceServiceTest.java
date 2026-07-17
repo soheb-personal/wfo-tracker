@@ -74,4 +74,55 @@ class ComplianceServiceTest {
         // Compliance % = round((7/9)*100) = round(77.777) = 78%
         assertEquals(78, dto.compliancePercentage(), "Compliance percentage should be 78%");
     }
+
+    @Test
+    void testComplianceDefaultFallback() {
+        AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+        MonthlyConfigurationRepository monthlyConfigRepository = mock(MonthlyConfigurationRepository.class);
+        ComplianceService complianceService = new ComplianceService(attendanceRepository, monthlyConfigRepository);
+
+        User employee = new User();
+        employee.setId(2L);
+        employee.setFullName("Jane Smith");
+        employee.setUsername("janesmith");
+        employee.setActive(true);
+
+        when(monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(2L, 7, 2026))
+                .thenReturn(Optional.empty());
+        when(attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(2L, 7, 2026))
+                .thenReturn(3);
+
+        EmployeeComplianceDto dto = complianceService.getComplianceForEmployee(employee, 7, 2026);
+
+        // Required days fallback working days: July 2026 has 23 working days. Required days = ceil(23*0.50) = 12.
+        assertEquals(12, dto.requiredOfficeDays(), "Fallback required office days should be 12");
+        assertEquals(3, dto.actualOfficeDaysVisited(), "Actual visited days should be 3");
+        assertEquals(9, dto.remainingOfficeDays(), "Remaining office days should be 9");
+        // Compliance % = round((3/12)*100) = 25%
+        assertEquals(25, dto.compliancePercentage(), "Compliance percentage should be 25%");
+    }
+
+    @Test
+    void testComplianceForEmployeeWithActiveStatus() {
+        AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+        MonthlyConfigurationRepository monthlyConfigRepository = mock(MonthlyConfigurationRepository.class);
+        ComplianceService complianceService = new ComplianceService(attendanceRepository, monthlyConfigRepository);
+
+        User employee = new User();
+        employee.setId(3L);
+        employee.setFullName("Mark Green");
+        employee.setUsername("markgreen");
+        employee.setActive(true);
+
+        when(monthlyConfigRepository.findByEmployeeIdAndMonthAndYear(3L, 7, 2026))
+                .thenReturn(Optional.empty());
+        when(attendanceRepository.countVisitedDaysByEmployeeIdAndMonthAndYear(3L, 7, 2026))
+                .thenReturn(1);
+
+        // Call the 4-parameter method directly
+        EmployeeComplianceDto dto = complianceService.getComplianceForEmployee(employee, false, 7, 2026);
+
+        // Verify active status is set to false in the returned DTO
+        org.junit.jupiter.api.Assertions.assertFalse(dto.active(), "Active status should match the passed parameter");
+    }
 }

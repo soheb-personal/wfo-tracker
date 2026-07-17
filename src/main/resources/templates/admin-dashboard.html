@@ -79,8 +79,10 @@
                                     <button type="submit" class="btn btn-outline-danger px-3 fw-semibold" onclick="return confirm('Are you sure you want to deactivate this team? This automatically suspends its manager and deactivates all employee memberships inside this team.')">Deactivate Team</button>
                                 </form>
                             </div>
-                            <div th:unless="${team.active}" class="text-muted fw-semibold py-4 pe-4">
-                                No actions available for deactivated teams.
+                            <div th:unless="${team.active}">
+                                <form th:action="@{/admin/team/delete/{id}(id=${team.id})}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger px-3 fw-semibold" onclick="return confirm('Are you sure you want to delete this deactivated team permanently? This automatically purges all assignments but preserves individual user records.')">Delete Team Permanently</button>
+                                </form>
                             </div>
                         </div>
                     </div>

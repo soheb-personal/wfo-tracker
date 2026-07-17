@@ -330,4 +330,33 @@ class AdminServiceTest {
         assertEquals("encodedDefaultPass", manager.getPassword());
         assertFalse(manager.isPasswordChanged());
     }
+
+    @Test
+    void testDeleteTeam_NotFound() {
+        when(teamRepository.findById(99L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> adminService.deleteTeam(99L));
+        assertEquals("Team not found", exception.getMessage());
+    }
+
+    @Test
+    void testDeleteTeam_ActiveFails() {
+        team.setActive(true);
+        when(teamRepository.findById(1L)).thenReturn(Optional.of(team));
+
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> adminService.deleteTeam(1L));
+        assertEquals("Cannot delete an active team. Deactivate it first.", exception.getMessage());
+    }
+
+    @Test
+    void testDeleteTeam_Success() {
+        team.setActive(false);
+        when(teamRepository.findById(1L)).thenReturn(Optional.of(team));
+
+        adminService.deleteTeam(1L);
+
+        verify(teamRepository).delete(team);
+    }
 }

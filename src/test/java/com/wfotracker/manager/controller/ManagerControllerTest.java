@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -74,9 +75,13 @@ class ManagerControllerTest {
             }
         };
 
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+
         mockMvc = MockMvcBuilders.standaloneSetup(managerController)
                 .setViewResolvers(viewResolver)
                 .setCustomArgumentResolvers(argumentResolver)
+                .setValidator(validator)
                 .build();
     }
 
@@ -285,6 +290,148 @@ class ManagerControllerTest {
         mockMvc.perform(get("/manager/employee/history/2").param("month", "7").param("year", "2026"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("attendance-history"))
-                .andExpect(model().attributeExists("history", "currentMonth", "currentYear", "employeeId"));
+                .andExpect(model().attributeExists("history", "currentMonth", "currentYear", "employeeId", "today"));
+    }
+
+    @Test
+    void testAddEmployee_ServiceException() throws Exception {
+        doThrow(new IllegalArgumentException("Employee DAS ID already exists"))
+                .when(managerService)
+                .addEmployee(eq(1L), any());
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(post("/manager/employee/add")
+                        .param("employeeName", "Jane Employee")
+                        .param("employeeDasId", "jane"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("employee-form"))
+                .andExpect(model().attribute("error", "Employee DAS ID already exists"));
+    }
+
+    @Test
+    void testEditEmployee_ServiceException() throws Exception {
+        doThrow(new IllegalArgumentException("Username already exists"))
+                .when(managerService)
+                .editEmployee(eq(1L), eq(2L), any());
+        when(managerService.getGroupsForManager(1L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(post("/manager/employee/edit/2")
+                        .param("employeeName", "Jane New")
+                        .param("username", "janenew"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("employee-edit"))
+                .andExpect(model().attribute("employeeId", 2L))
+                .andExpect(model().attribute("error", "Username already exists"));
+    }
+
+    @Test
+    void testDeleteEmployee_ServiceException() throws Exception {
+        doThrow(new IllegalArgumentException("Permanently delete failed"))
+                .when(managerService)
+                .deleteDeactivatedEmployee(1L, 2L);
+
+        mockMvc.perform(post("/manager/employee/delete/2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/employee/list"))
+                .andExpect(flash().attribute("error", "Permanently delete failed"));
+    }
+
+    @Test
+    void testResetEmployeePassword_ServiceException() throws Exception {
+        doThrow(new IllegalArgumentException("Reset failed"))
+                .when(managerService)
+                .resetEmployeePassword(1L, 2L);
+
+        mockMvc.perform(post("/manager/employee/reset-password/2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/dashboard"))
+                .andExpect(flash().attribute("error", "Reset failed"));
+    }
+
+    @Test
+    void testConfigureEmployee_ServiceException() throws Exception {
+        doThrow(new IllegalArgumentException("Config failed"))
+                .when(managerService)
+                .configureMonthly(eq(1L), eq(2L), any());
+
+        mockMvc.perform(post("/manager/employee/configure/2")
+                        .param("leaves", "1")
+                        .param("publicHolidays", "1")
+                        .param("exceptionDays", "1")
+                        .param("manualCheckins", "1")
+                        .param("month", "7")
+                        .param("year", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("employee-config"))
+                .andExpect(model().attribute("employeeId", 2L))
+                .andExpect(model().attribute("error", "Config failed"));
+    }
+
+    @Test
+    void testCreateGroup_ValidationError() throws Exception {
+        mockMvc.perform(post("/manager/group/create").param("groupName", ""))
+                .andExpect(status().isOk())
+                .andExpect(view().name("group-form"))
+                .andExpect(model().attribute("error", "Group name cannot be empty"));
+    }
+
+    @Test
+    void testCreateGroup_ServiceException() throws Exception {
+        doThrow(new IllegalArgumentException("Group name exists"))
+                .when(managerService)
+                .createGroup(1L, "Engineering");
+
+        mockMvc.perform(post("/manager/group/create").param("groupName", "Engineering"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("group-form"))
+                .andExpect(model().attribute("error", "Group name exists"));
+    }
+
+    @Test
+    void testDeleteGroup_ServiceException() throws Exception {
+        doThrow(new IllegalArgumentException("Delete group failed"))
+                .when(managerService)
+                .deleteGroup(1L, 30L);
+
+        mockMvc.perform(post("/manager/group/delete/30"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/group/list"))
+                .andExpect(flash().attribute("error", "Delete group failed"));
+    }
+
+    @Test
+    void testExportToExcel_Success() throws Exception {
+        when(managerService.getMembershipsForManager(eq(1L), any())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/manager/export/xlsx"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+    }
+
+    @Test
+    void testExportToCsv_Success() throws Exception {
+        when(managerService.getMembershipsForManager(eq(1L), any())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/manager/export/csv"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv"));
+    }
+
+    @Test
+    void testExportEmployeesExcel_Success() throws Exception {
+        when(managerService.getMembershipsForManager(eq(1L), any())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/manager/employee/export/xlsx"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+    }
+
+    @Test
+    void testExportEmployeesCsv_Success() throws Exception {
+        when(managerService.getMembershipsForManager(eq(1L), any())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/manager/employee/export/csv"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv"));
     }
 }
